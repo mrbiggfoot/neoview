@@ -9,12 +9,13 @@ import sys
 from neovim import attach
 
 if len(sys.argv) != 3:
-    print("Usage: %s <preview_fn> \"<context_str>\"" % sys.argv[0])
+    sys.stderr.write("Usage: %s <preview_fn> \"<context_str>\"\n" %
+                     sys.argv[0])
     sys.exit(1)
 
 addr = os.environ.get("NVIM_LISTEN_ADDRESS", None)
 if not addr:
-    print("$NVIM_LISTEN_ADDRESS is not set!")
+    sys.stderr.write("$NVIM_LISTEN_ADDRESS is not set!\n")
     sys.exit(1)
 
 nvim = attach("socket", path=addr)
