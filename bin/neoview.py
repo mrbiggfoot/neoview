@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# Script to be executed from neovim terminal to open neoview window.
+# Author:  Andrew Pyatkov <mrbiggfoot@gmail.com>
+# License: MIT
+#
 """
 Open a preview window in the host neovim instance if required and call
 <preview_fn> with <context_str> passed as an argument.
