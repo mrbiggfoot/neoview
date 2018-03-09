@@ -5,17 +5,18 @@
 # License: MIT
 #
 """
-Open a preview window in the host neovim instance if required and call
-<preview_fn> with <context_str> passed as an argument.
+Open a preview window in the host neovim instance using <create_cmd> if
+required, then call <preview_fn> with <context_str> passed as an argument.
 """
 import os
 import sys
 
 from neovim import attach
 
-if len(sys.argv) != 3:
-    sys.stderr.write("Usage: %s <preview_fn> \"<context_str>\"\n" %
-                     sys.argv[0])
+if len(sys.argv) != 4:
+    sys.stderr.write(
+        "Usage: %s <create_cmd> <preview_fn> \"<context_str>\"\n" %
+        sys.argv[0])
     sys.exit(1)
 
 addr = os.environ.get("NVIM_LISTEN_ADDRESS", None)
@@ -24,5 +25,5 @@ if not addr:
     sys.exit(1)
 
 nvim = attach("socket", path=addr)
-nvim.command("call neoview#run(\"%s\", \"%s\")" %
-             (sys.argv[1], sys.argv[2]))
+nvim.command("call neoview#show(\"%s\", \"%s\", \"%s\")" %
+             (sys.argv[1], sys.argv[2], sys.argv[3]))
