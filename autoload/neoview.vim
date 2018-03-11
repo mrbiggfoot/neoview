@@ -12,7 +12,7 @@ set cpo&vim
 " Common vars.
 let s:bin_dir = expand('<sfile>:h:h').'/bin/'
 let s:preview_script = s:bin_dir.'neoview.py'
-let s:enable_preview = 0
+let s:enable_preview = 1
 let s:cur_bufnr = -1      " Buffer number displayed in neoview window.
 let s:cur_bufnr_excl = 0  " Whether the buffer was created exclusively
                           " for neoview.
@@ -51,7 +51,6 @@ endfunction
 
 " Open neoview window if required and call preview_fn(context_str).
 function! neoview#update(create_cmd, preview_fn, context_str)
-  echom 'neoview#update("'.a:create_cmd.'", "'.a:preview_fn.'", "'.a:context_str.'")'
   let s:create_cmd = a:create_cmd
   let s:preview_fn = a:preview_fn
   let s:context_str = a:context_str
@@ -71,27 +70,30 @@ function! neoview#update(create_cmd, preview_fn, context_str)
   if s:cur_bufnr != -1 && s:cur_bufnr_excl && !getbufvar(s:cur_bufnr, "&mod")
     let del_buf = s:cur_bufnr
   endif
-  let buf_count = len(getbufinfo({'buflisted': 1}))
+
+  " Save current buffers names.
+  let bufnames = map(copy(getbufinfo()), 'v:val.name')
 
   " Change focus to neoview window.
   exec neoview_winnr.'wincmd w'
 
   " Call the preview function that will set the neoview window content based
   " on the context_str.
-  exec 'call '.s:preview_fn.'(\"'.s:context_str.'\")'
-
-  " Return focus to where it was.
-  wincmd p
+  exec 'call '.s:preview_fn.'("'.s:context_str.'")'
 
   " Maybe delete the previously previewed buffer.
   let new_bufnr = winbufnr(neoview_winnr)
   if new_bufnr != s:cur_bufnr
-    let s:cur_bufnr_excl = (len(getbufinfo({'buflisted': 1})) > buf_count)
+    let s:cur_bufnr_excl =
+      \(index(bufnames, getbufinfo(new_bufnr)[0]['name']) == -1)
     let s:cur_bufnr = new_bufnr
     if exists('del_buf')
-      bd del_buf
+      exec 'bw '.del_buf
     endif
   endif
+
+  " Return focus to where it was.
+  wincmd p
 endfunction
 
 "------------------------------------------------------------------------------
