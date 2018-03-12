@@ -76,6 +76,7 @@ function! neoview#update(create_cmd, view_fn, context_str)
   " Find out neoview window number.
   let neoview_winnr = s:neoview_winnr()
   if !neoview_winnr
+    let restore_view = winsaveview()
     let neoview_winnr = s:open_neoview()
   endif
 
@@ -115,12 +116,9 @@ function! neoview#update(create_cmd, view_fn, context_str)
   wincmd p
 
   " Temporary workarund until https://github.com/neovim/neovim/issues/8096
-  " is fixed. TODO
-  if &winfixheight && &buftype ==# 'terminal'
-    echom 'FIX' " XXX
-    exec 'res +1'
-    exec 'res -1'
-    redraw!
+  " is fixed.
+  if exists('restore_view')
+    call winrestview(restore_view)
   endif
 endfunction
 
