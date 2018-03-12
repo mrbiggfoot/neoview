@@ -49,10 +49,25 @@ endfunction
 
 "------------------------------------------------------------------------------
 
-" Open neoview window if required and call preview_fn(context_str).
-function! neoview#update(create_cmd, preview_fn, context_str)
+" If the buffer displayed exclusively by neoview is opened in another window,
+" mark it non-exclusive to prevent closing it when neoview is updated to show
+" another buffer. Also, re-enable ALE for it.
+function! s:make_nonexclusive()
+  if !getwinvar(winnr(), 'neoview') && bufnr('%') == s:cur_bufnr
+    let s:cur_bufnr_excl = 0
+    if exists('g:ale_enabled')
+      ALEEnableBuffer
+    endif
+  endif
+endfunction
+autocmd BufWinEnter * call s:make_nonexclusive()
+
+"------------------------------------------------------------------------------
+
+" Open neoview window if required and call view_fn(context_str).
+function! neoview#update(create_cmd, view_fn, context_str)
   let s:create_cmd = a:create_cmd
-  let s:preview_fn = a:preview_fn
+  let s:view_fn = a:view_fn
   let s:context_str = a:context_str
   if !s:enable_preview
     return
@@ -79,13 +94,17 @@ function! neoview#update(create_cmd, preview_fn, context_str)
 
   " Call the preview function that will set the neoview window content based
   " on the context_str.
-  exec 'call '.s:preview_fn.'("'.s:context_str.'")'
+  exec 'call '.s:view_fn.'('''.s:context_str.''')'
 
   " Maybe delete the previously previewed buffer.
   let new_bufnr = winbufnr(neoview_winnr)
   if new_bufnr != s:cur_bufnr
     let s:cur_bufnr_excl =
       \(index(bufnames, getbufinfo(new_bufnr)[0]['name']) == -1)
+    if s:cur_bufnr_excl && exists('g:ale_enabled')
+      " Disable ALE if the buffer is opened exclusively for neoview.
+      ALEDisableBuffer
+    endif
     let s:cur_bufnr = new_bufnr
     if exists('del_buf')
       exec 'bw '.del_buf
@@ -94,6 +113,15 @@ function! neoview#update(create_cmd, preview_fn, context_str)
 
   " Return focus to where it was.
   wincmd p
+
+  " Temporary workarund until https://github.com/neovim/neovim/issues/8096
+  " is fixed. TODO
+  if &winfixheight && &buftype ==# 'terminal'
+    echom 'FIX' " XXX
+    exec 'res +1'
+    exec 'res -1'
+    redraw!
+  endif
 endfunction
 
 "------------------------------------------------------------------------------
