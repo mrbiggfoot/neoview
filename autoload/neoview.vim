@@ -82,7 +82,7 @@ function! neoview#update(create_cmd, view_fn, context_str)
 
   " Close the buffer displayed in the neoview window if this buffer was opened
   " exclusively for neoview and contains no unsaved changes. Will be closed
-  " only if the next preview opens a new buffer.
+  " only if the next view opens a new buffer.
   if s:cur_bufnr != -1 && s:cur_bufnr_excl && !getbufvar(s:cur_bufnr, "&mod")
     let del_buf = s:cur_bufnr
   endif
@@ -93,7 +93,7 @@ function! neoview#update(create_cmd, view_fn, context_str)
   " Change focus to neoview window.
   exec neoview_winnr.'wincmd w'
 
-  " Call the preview function that will set the neoview window content based
+  " Call the view function that will set the neoview window content based
   " on the context_str.
   exec 'call '.s:view_fn.'('''.s:context_str.''')'
 
