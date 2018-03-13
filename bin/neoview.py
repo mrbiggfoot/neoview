@@ -5,17 +5,17 @@
 # License: MIT
 #
 """
-Open a preview window in the host neovim instance using <create_cmd> if
-required, then call <preview_fn> with <context_str> passed as an argument.
+Update neoview identified by <id> with the currently selected candidate
+identified by <context_str>.
 """
 import os
 import sys
 
 from neovim import attach
 
-if len(sys.argv) != 4:
+if len(sys.argv) != 3:
     sys.stderr.write(
-        "Usage: %s <create_cmd> <preview_fn> \"<context_str>\"\n" %
+        "Usage: %s <id> \"<context_str>\"\n" %
         sys.argv[0])
     sys.exit(1)
 
@@ -25,5 +25,4 @@ if not addr:
     sys.exit(1)
 
 nvim = attach("socket", path=addr)
-nvim.command("call neoview#update(\"%s\", \"%s\", \"%s\")" %
-             (sys.argv[1], sys.argv[2], sys.argv[3]))
+nvim.command("call neoview#update(%s, '%s')" % (sys.argv[1], sys.argv[2]))

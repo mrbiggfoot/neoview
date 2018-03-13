@@ -12,17 +12,30 @@ set cpo&vim
 " Common vars.
 let s:bin_dir = expand('<sfile>:h:h').'/bin/'
 let s:preview_script = s:bin_dir.'neoview.py'
-let s:enable_preview = 1
-let s:cur_bufnr = -1      " Buffer number displayed in neoview window.
-let s:cur_bufnr_excl = 0  " Whether the buffer was created exclusively
-                          " for neoview.
+let s:neoview_id = 0
+
+" Maps neoview_id to the current state. An entry is added by neoview#create()
+" and removed by neoview#close() calls.
+"
+" A state consists of:
+"
+" search_win_cmd  - string, vim command to create the search window.
+" preview_win_cmd - string, vim command to create the preview window.
+" view_fn         - string, vim script function name to be called on
+"                   candidate for both preview and action.
+" enable_preview  - bool, whether preview window is enabled.
+" cur_bufnr       - int, buffer number displayed in neoview window.
+" cur_bufnr_excl  - bool, whether the buffer was created exclusively
+"                   for neoview.
+" context_str     - string, set to the last context_str from neoview#update().
+let s:state = {}
 
 "------------------------------------------------------------------------------
 
-" Return neoview window number, 0 if none exists.
-function! s:neoview_winnr()
+" Return neoview window number with the specified id, 0 if none exists.
+function! s:neoview_winnr(id)
   for nr in range(1, winnr('$'))
-    if getwinvar(nr, 'neoview')
+    if getwinvar(nr, 'neoview') == a:id
       return nr
     endif
   endfor
@@ -31,11 +44,11 @@ endfunction
 
 "------------------------------------------------------------------------------
 
-" Open neoview window using s:create_cmd.
-function! s:open_neoview()
-  exec s:create_cmd
+" Open neoview window using preview_win_cmd.
+function! s:open_neoview(id)
+  exec s:state[a:id].preview_win_cmd
   let nr = winnr()
-  call setwinvar(nr, 'neoview', 1)
+  call setwinvar(nr, 'neoview', a:id)
   wincmd p
   return nr
 endfunction
@@ -51,40 +64,65 @@ endfunction
 
 " If the buffer displayed exclusively by neoview is opened in another window,
 " mark it non-exclusive to prevent closing it when neoview is updated to show
-" another buffer. Also, re-enable ALE for it.
+" aother buffer. Also, re-enable ALE for it.
 function! s:make_nonexclusive()
-  if !getwinvar(winnr(), 'neoview') && bufnr('%') == s:cur_bufnr
-    let s:cur_bufnr_excl = 0
-    if exists('g:ale_enabled')
-      ALEEnableBuffer
-    endif
+  if !getwinvar(winnr(), 'neoview')
+    let cur_bufnr = bufnr('%')
+    for state in values(s:state)
+      if cur_bufnr == state.cur_bufnr && state.cur_bufnr_excl
+        let state.cur_bufnr_excl = 0
+        if exists('g:ale_enabled')
+          ALEEnableBuffer
+        endif
+      endif
+    endfor
   endif
 endfunction
 autocmd BufWinEnter * call s:make_nonexclusive()
 
 "------------------------------------------------------------------------------
 
+" Initialize context for a new neoview session. Returns the session id.
+" When the session is complete, neoview#close(id) must be called.
+function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
+  let s:neoview_id = s:neoview_id + 1
+  let s:state[s:neoview_id] = {
+  \ 'search_win_cmd' : a:search_win_cmd,
+  \ 'preview_win_cmd' : a:preview_win_cmd,
+  \ 'view_fn' : a:view_fn,
+  \ 'enable_preview' : 1,
+  \ 'cur_bufnr' : -1,
+  \ 'cur_bufnr_excl' : 0
+  \ }
+  return s:neoview_id
+endfunction
+
+"------------------------------------------------------------------------------
+
 " Open neoview window if required and call view_fn(context_str).
-function! neoview#update(create_cmd, view_fn, context_str)
-  let s:create_cmd = a:create_cmd
-  let s:view_fn = a:view_fn
-  let s:context_str = a:context_str
-  if !s:enable_preview
+function! neoview#update(id, context_str)
+  let state = s:state[a:id]
+  let state.context_str = a:context_str
+  if !state.enable_preview
     return
   endif
 
   " Find out neoview window number.
-  let neoview_winnr = s:neoview_winnr()
+  let neoview_winnr = s:neoview_winnr(a:id)
   if !neoview_winnr
     let restore_view = winsaveview()
-    let neoview_winnr = s:open_neoview()
+    let neoview_winnr = s:open_neoview(a:id)
   endif
+
+  " Store vars for faster access.
+  let cur_bufnr = state.cur_bufnr
+  let cur_bufnr_excl = state.cur_bufnr_excl
 
   " Close the buffer displayed in the neoview window if this buffer was opened
   " exclusively for neoview and contains no unsaved changes. Will be closed
   " only if the next view opens a new buffer.
-  if s:cur_bufnr != -1 && s:cur_bufnr_excl && !getbufvar(s:cur_bufnr, "&mod")
-    let del_buf = s:cur_bufnr
+  if cur_bufnr != -1 && cur_bufnr_excl && !getbufvar(cur_bufnr, "&mod")
+    let del_buf = cur_bufnr
   endif
 
   " Save current buffers names.
@@ -95,18 +133,19 @@ function! neoview#update(create_cmd, view_fn, context_str)
 
   " Call the view function that will set the neoview window content based
   " on the context_str.
-  exec 'call '.s:view_fn.'('''.s:context_str.''')'
+  exec 'call ' . state['view_fn'] . '(''' . a:context_str . ''')'
 
   " Maybe delete the previously previewed buffer.
   let new_bufnr = winbufnr(neoview_winnr)
-  if new_bufnr != s:cur_bufnr
-    let s:cur_bufnr_excl =
+  if new_bufnr != cur_bufnr
+    let cur_bufnr_excl =
       \(index(bufnames, getbufinfo(new_bufnr)[0]['name']) == -1)
-    if s:cur_bufnr_excl && exists('g:ale_enabled')
+    if cur_bufnr_excl && exists('g:ale_enabled')
       " Disable ALE if the buffer is opened exclusively for neoview.
       ALEDisableBuffer
     endif
-    let s:cur_bufnr = new_bufnr
+    let state.cur_bufnr = new_bufnr
+    let state.cur_bufnr_excl = cur_bufnr_excl
     if exists('del_buf')
       exec 'bw '.del_buf
     endif
