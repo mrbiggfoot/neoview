@@ -22,7 +22,9 @@ endfunction
 function! neoview#fzf#run(fzf_win_cmd, preview_win_cmd, source, view_fn)
   let view_fn = (a:view_fn == '') ? 'neoview#fzf#def_view_fn' : a:view_fn
   let id = neoview#create(a:fzf_win_cmd, a:preview_win_cmd, view_fn)
-  if a:fzf_win_cmd != ''
+  if a:fzf_win_cmd == ''
+    enew
+  else
     exec a:fzf_win_cmd
   endif
 

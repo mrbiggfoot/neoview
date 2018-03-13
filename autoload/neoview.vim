@@ -119,7 +119,7 @@ function! neoview#close(id, view_context)
 
   " Remove the preview buffer if required.
   if state.cur_bufnr != -1 && state.cur_bufnr_excl
-    bd state.cur_bufnr
+    exec 'bd ' . state.cur_bufnr
   endif
 
   " Call view function with 'final' = true.
