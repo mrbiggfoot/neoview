@@ -22,11 +22,10 @@ endfunction
 function! neoview#fzf#run(fzf_win_cmd, preview_win_cmd, source, view_fn)
   let view_fn = (a:view_fn == '') ? 'neoview#fzf#def_view_fn' : a:view_fn
   let id = neoview#create(a:fzf_win_cmd, a:preview_win_cmd, view_fn)
-  if a:fzf_win_cmd == ''
-    enew
-  else
+  if a:fzf_win_cmd != ''
     exec a:fzf_win_cmd
   endif
+  enew
 
   " We can't just use stdout because it will contain stuff from fzf interface.
   let out = tempname()

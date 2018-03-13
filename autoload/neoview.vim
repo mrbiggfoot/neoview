@@ -108,18 +108,28 @@ function! neoview#close(id, view_context)
     exec nr . 'wincmd q'
   endif
 
+  " Close search window if it was created.
+  let state = s:state[a:id]
+  let search_bufnr = bufnr('%')
+  if state.search_win_cmd != ''
+    wincmd q
+  endif
+
   " Close the search buffer. Use 'vim-bbye' plugin's function if possible to
   " preserve the window layout.
-  let state = s:state[a:id]
   if exists('g:loaded_bbye')
-    Bdelete!
+    exec 'Bdelete! ' . search_bufnr
   else
-    bd!
+    exec 'bd! ' . search_bufnr
   endif
 
   " Remove the preview buffer if required.
   if state.cur_bufnr != -1 && state.cur_bufnr_excl
-    exec 'bd ' . state.cur_bufnr
+    if exists('g:loaded_bbye')
+      exec 'Bwipeout ' . state.cur_bufnr
+    else
+      exec 'bw ' . state.cur_bufnr
+    endif
   endif
 
   " Call view function with 'final' = true.
