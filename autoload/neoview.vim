@@ -87,28 +87,44 @@ autocmd BufWinEnter * call s:make_nonexclusive()
 function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
   let s:neoview_id = s:neoview_id + 1
   let s:state[s:neoview_id] = {
-  \ 'search_win_cmd' : a:search_win_cmd,
-  \ 'preview_win_cmd' : a:preview_win_cmd,
-  \ 'view_fn' : a:view_fn,
-  \ 'enable_preview' : 1,
-  \ 'cur_bufnr' : -1,
-  \ 'cur_bufnr_excl' : 0
-  \ }
+    \ 'search_win_cmd' : a:search_win_cmd,
+    \ 'preview_win_cmd' : a:preview_win_cmd,
+    \ 'view_fn' : a:view_fn,
+    \ 'enable_preview' : 1,
+    \ 'cur_bufnr' : -1,
+    \ 'cur_bufnr_excl' : 0
+    \ }
   return s:neoview_id
 endfunction
 
 "------------------------------------------------------------------------------
 
 " Destroy the context of neoview session. Also, closes the preview window if
-" required.
-function! neoview#close(id)
-  let winnr = s:neoview_winnr(a:id)
+" required. If view_context is not empty, call view_fn(view_context).
+function! neoview#close(id, view_context)
+  " Close preview window if required.
+  let nr = s:neoview_winnr(a:id)
   if nr
     exec nr . 'wincmd q'
   endif
+
+  " Close the search buffer. Use 'vim-bbye' plugin's function if possible to
+  " preserve the window layout.
   let state = s:state[a:id]
+  if exists('g:loaded_bbye')
+    Bdelete!
+  else
+    bd!
+  endif
+
+  " Remove the preview buffer if required.
   if state.cur_bufnr != -1 && state.cur_bufnr_excl
-    exec 'bw ' . state.cur_bufnr
+    bd state.cur_bufnr
+  endif
+
+  " Call view function with 'final' = true.
+  if a:view_context != ''
+    exec 'call ' . state['view_fn'] . '(''' . a:view_context . ''', 1)'
   endif
   unlet s:state[a:id]
 endfunction
@@ -148,8 +164,8 @@ function! neoview#update(id, context_str)
   exec neoview_winnr . 'wincmd w'
 
   " Call the view function that will set the neoview window content based
-  " on the context_str.
-  exec 'call ' . state['view_fn'] . '(''' . a:context_str . ''')'
+  " on the context_str. The 'final' argument is false.
+  exec 'call ' . state['view_fn'] . '(''' . a:context_str . ''', 0)'
 
   " Maybe delete the previously previewed buffer.
   let new_bufnr = winbufnr(neoview_winnr)
