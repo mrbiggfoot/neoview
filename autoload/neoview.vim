@@ -99,6 +99,22 @@ endfunction
 
 "------------------------------------------------------------------------------
 
+" Destroy the context of neoview session. Also, closes the preview window if
+" required.
+function! neoview#close(id)
+  let winnr = s:neoview_winnr(a:id)
+  if nr
+    exec nr . 'wincmd q'
+  endif
+  let state = s:state[a:id]
+  if state.cur_bufnr != -1 && state.cur_bufnr_excl
+    exec 'bw ' . state.cur_bufnr
+  endif
+  unlet s:state[a:id]
+endfunction
+
+"------------------------------------------------------------------------------
+
 " Open neoview window if required and call view_fn(context_str).
 function! neoview#update(id, context_str)
   let state = s:state[a:id]
@@ -129,7 +145,7 @@ function! neoview#update(id, context_str)
   let bufnames = map(copy(getbufinfo()), 'v:val.name')
 
   " Change focus to neoview window.
-  exec neoview_winnr.'wincmd w'
+  exec neoview_winnr . 'wincmd w'
 
   " Call the view function that will set the neoview window content based
   " on the context_str.
@@ -147,7 +163,7 @@ function! neoview#update(id, context_str)
     let state.cur_bufnr = new_bufnr
     let state.cur_bufnr_excl = cur_bufnr_excl
     if exists('del_buf')
-      exec 'bw '.del_buf
+      exec 'bw ' . del_buf
     endif
   endif
 
