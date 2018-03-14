@@ -7,6 +7,15 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
+if !exists('g:neoview_toggle_preview')
+  let g:neoview_toggle_preview = '<F1>'
+endif
+
+exec 'tmap <silent> ' . g:neoview_toggle_preview .
+  \ ' <C-\><C-n>:call neoview#toggle_preview()<CR>'
+exec 'nmap <silent> ' . g:neoview_toggle_preview .
+  \ ' :call neoview#toggle_preview()<CR>'
+
 "------------------------------------------------------------------------------
 
 " Common vars.
@@ -105,6 +114,45 @@ endfunction
 
 "------------------------------------------------------------------------------
 
+" Toggle preview window. Works from both search and preview windows.
+function! neoview#toggle_preview()
+  let id = getwinvar(winnr(), 'neoview_p')
+  if id
+    " Preview window is in focus, switch to the search window.
+    let nr = s:neoview_winnr(id, 'neoview_s')
+    exec nr . 'wincmd w'
+  else
+    let id = getwinvar(winnr(), 'neoview_s')
+  endif
+
+  if id
+    " Search window is in focus.
+    let state = s:state[id]
+    let nr = s:neoview_winnr(id, 'neoview_p')
+    if nr
+      " Close the preview.
+      exec nr . 'wincmd q'
+      if s:has_exclusive_buffer(id)
+        if exists('g:loaded_bbye')
+          exec 'Bwipeout ' . state.cur_bufnr
+        else
+          exec 'bw ' . state.cur_bufnr
+        endif
+      endif
+      let state.enable_preview = 0
+      let state.cur_bufnr = -1
+      let state.cur_bufnr_excl = 0
+    else
+      " Open the preview.
+      let state.enable_preview = 1
+      call neoview#update(id, state.context_str)
+    endif
+    startinsert
+  endif
+endfunction
+
+"------------------------------------------------------------------------------
+
 " Initialize context for a new neoview session. Returns the session id.
 " When the session is complete, neoview#close(id) must be called.
 function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
@@ -123,7 +171,7 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
     \ 'search_bufnr' : bufnr('%'),
     \ 'preview_win_cmd' : a:preview_win_cmd,
     \ 'view_fn' : a:view_fn,
-    \ 'enable_preview' : 1,
+    \ 'enable_preview' : 0,
     \ 'cur_bufnr' : -1,
     \ 'cur_bufnr_excl' : 0
     \ }
