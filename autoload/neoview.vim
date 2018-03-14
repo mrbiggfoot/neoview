@@ -93,6 +93,7 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
 
   call setwinvar(winnr(), 'neoview_s', s:neoview_id)
   enew
+  setlocal statusline=-\ neoview\ -
 
   let s:state[s:neoview_id] = {
     \ 'search_win_cmd' : a:search_win_cmd,
@@ -122,6 +123,7 @@ function! neoview#close(id, view_context)
   let nr = s:neoview_winnr(a:id, 'neoview_s')
   if state.search_win_cmd == ''
     call setwinvar(nr, 'neoview_s', 0)
+    setlocal statusline=
   else
     exec nr . 'wincmd q'
   endif
