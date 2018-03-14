@@ -82,6 +82,29 @@ autocmd BufWinEnter * call s:make_nonexclusive()
 
 "------------------------------------------------------------------------------
 
+" Returns non-zero if the session contains a buffer that is opened exclusively
+" for it, zero otherwise. Also, if there's no associated buffer, return zero.
+function! s:has_exclusive_buffer(id)
+  let state = s:state[a:id]
+  let cur_bufnr = state.cur_bufnr
+  if cur_bufnr == -1 || !state.cur_bufnr_excl || getbufvar(cur_bufnr, '&mod')
+    return 0
+  endif
+
+  " Check if the buffer is opened in another neoview preview window.
+  for [key, val] in items(s:state)
+    if key == a:id
+      continue
+    endif
+    if cur_bufnr == val.cur_bufnr
+      return 0
+    endif
+  endfor
+  return 1
+endfunction
+
+"------------------------------------------------------------------------------
+
 " Initialize context for a new neoview session. Returns the session id.
 " When the session is complete, neoview#close(id) must be called.
 function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
@@ -93,7 +116,7 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
 
   call setwinvar(winnr(), 'neoview_s', s:neoview_id)
   enew
-  setlocal statusline=-\ neoview\ -
+  exec 'setlocal statusline=-\ neoview\ ' . s:neoview_id . '\ -'
 
   let s:state[s:neoview_id] = {
     \ 'search_win_cmd' : a:search_win_cmd,
@@ -137,7 +160,7 @@ function! neoview#close(id, view_context)
   endif
 
   " Remove the preview buffer if required.
-  if state.cur_bufnr != -1 && state.cur_bufnr_excl
+  if s:has_exclusive_buffer(a:id)
     if exists('g:loaded_bbye')
       exec 'Bwipeout ' . state.cur_bufnr
     else
@@ -177,17 +200,8 @@ function! neoview#update(id, context_str)
   " exclusively for neoview and contains no unsaved changes. Will be closed
   " only if the next view opens a new buffer and no other preview window has
   " it.
-  if cur_bufnr != -1 && cur_bufnr_excl && !getbufvar(cur_bufnr, "&mod")
+  if s:has_exclusive_buffer(a:id)
     let del_buf = cur_bufnr
-    for [key, val] in items(s:state)
-      if key == a:id
-        continue
-      endif
-      if cur_bufnr == val.cur_bufnr
-        unlet del_buf
-        break
-      endif
-    endfor
   endif
 
   " Save current buffers names.
