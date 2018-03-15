@@ -53,17 +53,6 @@ endfunction
 
 "------------------------------------------------------------------------------
 
-" Open preview window using preview_win_cmd.
-function! s:open_preview(id)
-  exec s:state[a:id].preview_win_cmd
-  let nr = winnr()
-  call setwinvar(nr, 'neoview_p', a:id)
-  wincmd p
-  return nr
-endfunction
-
-"------------------------------------------------------------------------------
-
 " Get preview script name.
 function! neoview#script_name()
   return s:preview_script
@@ -131,7 +120,11 @@ function! neoview#toggle_preview()
     let nr = s:neoview_winnr(id, 'neoview_p')
     if nr
       " Close the preview.
-      exec nr . 'wincmd q'
+      if state.preview_win_cmd != ''
+        exec nr . 'wincmd q'
+      else
+        call setwinvar(nr, 'neoview_p', 0)
+      endif
       if s:has_exclusive_buffer(id)
         if exists('g:loaded_bbye')
           exec 'Bwipeout ' . state.cur_bufnr
@@ -183,14 +176,17 @@ endfunction
 " Destroy the context of neoview session. Also, closes the preview window if
 " required. If view_context is not empty, call view_fn(view_context).
 function! neoview#close(id, view_context)
+  let state = s:state[a:id]
+
   " Close preview window if required.
-  let nr = s:neoview_winnr(a:id, 'neoview_p')
-  if nr
-    exec nr . 'wincmd q'
+  if state.preview_win_cmd != ''
+    let nr = s:neoview_winnr(a:id, 'neoview_p')
+    if nr
+      exec nr . 'wincmd q'
+    endif
   endif
 
   " Close search window if it was created, otherwise reset 'neoview_s' var.
-  let state = s:state[a:id]
   let nr = s:neoview_winnr(a:id, 'neoview_s')
   if state.search_win_cmd == ''
     call setwinvar(nr, 'neoview_s', 0)
@@ -233,11 +229,26 @@ function! neoview#update(id, context_str)
     return
   endif
 
+  " Put the search window in focus.
+  let search_winnr = s:neoview_winnr(a:id, 'neoview_s')
+  exec search_winnr . 'wincmd w'
+
   " Find out preview window number.
   let preview_winnr = s:neoview_winnr(a:id, 'neoview_p')
   if !preview_winnr
-    let restore_view = winsaveview()
-    let preview_winnr = s:open_preview(a:id)
+    if state.preview_win_cmd
+      exec s:state[a:id].preview_win_cmd
+      let preview_winnr = winnr()
+      wincmd p
+    else
+      wincmd k
+      let preview_winnr = winnr()
+      if preview_winnr == search_winnr
+        wincmd j
+        let preview_winnr = winnr()
+      endif
+    endif
+    call setwinvar(preview_winnr, 'neoview_p', a:id)
   endif
 
   " Store vars for faster access.
@@ -278,14 +289,8 @@ function! neoview#update(id, context_str)
     endif
   endif
 
-  " Return focus to where it was.
+  " Return focus to the search window.
   wincmd p
-
-  " Temporary workarund until https://github.com/neovim/neovim/issues/8096
-  " is fixed.
-  if exists('restore_view')
-    call winrestview(restore_view)
-  endif
 endfunction
 
 "------------------------------------------------------------------------------
