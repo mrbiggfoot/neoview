@@ -3,6 +3,11 @@
 " License: MIT
 "------------------------------------------------------------------------------
 
+if !exists('g:loaded_bbye')
+  echoerr '"moll/vim-bbye" is required!'
+  finish
+endif
+
 " Save cpo.
 let s:save_cpo = &cpo
 set cpo&vim
@@ -103,6 +108,43 @@ endfunction
 
 "------------------------------------------------------------------------------
 
+function! s:close_preview(id)
+  let state = s:state[a:id]
+  let nr = s:neoview_winnr(a:id, 'neoview_p')
+  if nr
+    if state.preview_win_cmd == ''
+      " Restore original content of the window.
+      exec nr . 'wincmd w'
+      let rbuf = getwinvar(nr, 'neoview_p_buf', -1)
+      let rview = getwinvar(nr, '', {})
+      if rbuf != -1 && getbufinfo(rbuf) != []
+        exec 'b ' . rbuf
+        if rview != {}
+          call winrestview(rview)
+        endif
+      else
+        enew
+      endif
+      call setwinvar(nr, 'neoview_p', 0)
+      call setwinvar(nr, 'neoview_p_buf', -1)
+      call setwinvar(nr, 'neoview_p_view', {})
+      wincmd p
+    else
+      exec nr . 'wincmd q'
+    endif
+  endif
+
+  if s:has_exclusive_buffer(a:id)
+    exec 'Bwipeout ' . state.cur_bufnr
+  endif
+
+  let state.enable_preview = 0
+  let state.cur_bufnr = -1
+  let state.cur_bufnr_excl = 0
+endfunction
+
+"------------------------------------------------------------------------------
+
 " Toggle preview window. Works from both search and preview windows.
 function! neoview#toggle_preview()
   let id = getwinvar(winnr(), 'neoview_p')
@@ -120,21 +162,7 @@ function! neoview#toggle_preview()
     let nr = s:neoview_winnr(id, 'neoview_p')
     if nr
       " Close the preview.
-      if state.preview_win_cmd != ''
-        exec nr . 'wincmd q'
-      else
-        call setwinvar(nr, 'neoview_p', 0)
-      endif
-      if s:has_exclusive_buffer(id)
-        if exists('g:loaded_bbye')
-          exec 'Bwipeout ' . state.cur_bufnr
-        else
-          exec 'bw ' . state.cur_bufnr
-        endif
-      endif
-      let state.enable_preview = 0
-      let state.cur_bufnr = -1
-      let state.cur_bufnr_excl = 0
+      call s:close_preview(id)
     else
       " Open the preview.
       let state.enable_preview = 1
@@ -177,14 +205,7 @@ endfunction
 " required. If view_context is not empty, call view_fn(view_context).
 function! neoview#close(id, view_context)
   let state = s:state[a:id]
-
-  " Close preview window if required.
-  if state.preview_win_cmd != ''
-    let nr = s:neoview_winnr(a:id, 'neoview_p')
-    if nr
-      exec nr . 'wincmd q'
-    endif
-  endif
+  call s:close_preview(a:id)
 
   " Close search window if it was created, otherwise reset 'neoview_s' var.
   let nr = s:neoview_winnr(a:id, 'neoview_s')
@@ -195,22 +216,8 @@ function! neoview#close(id, view_context)
     exec nr . 'wincmd q'
   endif
 
-  " Close the search buffer. Use 'vim-bbye' plugin's function if possible to
-  " preserve the window layout.
-  if exists('g:loaded_bbye')
-    exec 'Bdelete! ' . state.search_bufnr
-  else
-    exec 'bd! ' . state.search_bufnr
-  endif
-
-  " Remove the preview buffer if required.
-  if s:has_exclusive_buffer(a:id)
-    if exists('g:loaded_bbye')
-      exec 'Bwipeout ' . state.cur_bufnr
-    else
-      exec 'bw ' . state.cur_bufnr
-    endif
-  endif
+  " Close the search buffer.
+  exec 'bd! ' . state.search_bufnr
 
   " Call view function with 'final' = true.
   if a:view_context != ''
@@ -247,6 +254,9 @@ function! neoview#update(id, context_str)
         wincmd j
         let preview_winnr = winnr()
       endif
+      " Save the currently opened buffer and position.
+      call setwinvar(preview_winnr, 'neoview_p_buf', bufnr('%'))
+      call setwinvar(preview_winnr, 'neoview_p_view', winsaveview())
     endif
     call setwinvar(preview_winnr, 'neoview_p', a:id)
   endif
