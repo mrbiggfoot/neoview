@@ -25,4 +25,5 @@ if not addr:
     sys.exit(1)
 
 nvim = attach("socket", path=addr)
-nvim.command("call neoview#update(%s, '%s')" % (sys.argv[1], sys.argv[2]))
+ctx = sys.argv[2].replace("'", "''")
+nvim.command("call neoview#update(%s, '%s')" % (sys.argv[1], ctx))

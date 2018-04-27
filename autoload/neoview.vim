@@ -38,7 +38,7 @@ let s:neoview_id = 0
 " view_fn         - string, vim script function name to be called on
 "                   candidate for both preview and action.
 " enable_preview  - bool, whether preview window is enabled.
-" cur_bufnr       - int, buffer number displayed in preview window.
+" cur_bufnr       - int, buffer number displayed in the preview window.
 " cur_bufnr_excl  - bool, whether the buffer was created exclusively
 "                   for preview.
 " context_str     - string, set to the last context_str from neoview#update().
@@ -246,13 +246,27 @@ function! neoview#update(id, context_str)
     if state.preview_win_cmd
       exec s:state[a:id].preview_win_cmd
       let preview_winnr = winnr()
-      wincmd p
     else
       wincmd k
       let preview_winnr = winnr()
       if preview_winnr == search_winnr
         wincmd j
         let preview_winnr = winnr()
+        if preview_winnr == search_winnr
+          wincmd h
+          let preview_winnr = winnr()
+          if preview_winnr == search_winnr
+            wincmd l
+            let preview_winnr = winnr()
+            if preview_winnr == search_winnr
+              " Preview window command is not specified and we were unable to
+              " find a window to use for preview. Just create a new window
+              " for preview.
+              new
+              let preview_winnr = winnr()
+            endif
+          endif
+        endif
       endif
       " Save the currently opened buffer and position.
       call setwinvar(preview_winnr, 'neoview_p_buf', bufnr('%'))
