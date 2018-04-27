@@ -243,8 +243,8 @@ function! neoview#update(id, context_str)
   " Find out preview window number.
   let preview_winnr = s:neoview_winnr(a:id, 'neoview_p')
   if !preview_winnr
-    if state.preview_win_cmd
-      exec s:state[a:id].preview_win_cmd
+    if state.preview_win_cmd != ''
+      exec state.preview_win_cmd
       let preview_winnr = winnr()
     else
       wincmd k
