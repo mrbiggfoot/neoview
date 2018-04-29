@@ -314,7 +314,7 @@ function! neoview#update(id, context_str)
   endif
 
   " Return focus to the search window.
-  wincmd p
+  exec search_winnr . 'wincmd w'
 endfunction
 
 "------------------------------------------------------------------------------
