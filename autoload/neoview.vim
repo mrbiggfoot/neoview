@@ -314,6 +314,7 @@ function! neoview#update(id, context_str)
   endif
 
   " Return focus to the search window.
+  let search_winnr = s:neoview_winnr(a:id, 'neoview_s')
   exec search_winnr . 'wincmd w'
 endfunction
 
