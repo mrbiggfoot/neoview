@@ -236,10 +236,6 @@ function! neoview#update(id, context_str)
     return
   endif
 
-  " Put the search window in focus.
-  let search_winnr = s:neoview_winnr(a:id, 'neoview_s')
-  exec search_winnr . 'wincmd w'
-
   " Find out preview window number.
   let preview_winnr = s:neoview_winnr(a:id, 'neoview_p')
   if !preview_winnr
@@ -247,6 +243,8 @@ function! neoview#update(id, context_str)
       exec state.preview_win_cmd
       let preview_winnr = winnr()
     else
+      let search_winnr = s:neoview_winnr(a:id, 'neoview_s')
+      exec search_winnr . 'wincmd w'
       wincmd k
       let preview_winnr = winnr()
       if preview_winnr == search_winnr
