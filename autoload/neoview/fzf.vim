@@ -9,22 +9,8 @@ set cpo&vim
 
 "------------------------------------------------------------------------------
 
-function! neoview#fzf#def_view_fn(context_str, final)
-  if a:final
-    exec 'silent edit ' . a:context_str
-  else
-    exec 'silent view ' . a:context_str
-  endif
-endfunction
-
-"------------------------------------------------------------------------------
-
 function! neoview#fzf#run(fzf_win_cmd, preview_win_cmd, source, view_fn)
-  if a:fzf_win_cmd != ''
-    exec a:fzf_win_cmd
-  endif
-  let view_fn = (a:view_fn == '') ? 'neoview#fzf#def_view_fn' : a:view_fn
-  let id = neoview#create(a:fzf_win_cmd, a:preview_win_cmd, view_fn)
+  let id = neoview#create(a:fzf_win_cmd, a:preview_win_cmd, a:view_fn)
 
   " We can't just use stdout because it will contain stuff from fzf interface.
   let out = tempname()

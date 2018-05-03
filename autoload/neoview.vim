@@ -174,6 +174,16 @@ endfunction
 
 "------------------------------------------------------------------------------
 
+function! neoview#def_view_fn(context_str, final)
+  if a:final
+    exec 'silent edit ' . a:context_str
+  else
+    exec 'silent view ' . a:context_str
+  endif
+endfunction
+
+"------------------------------------------------------------------------------
+
 " Initialize context for a new neoview session. Returns the session id.
 " When the session is complete, neoview#close(id) must be called.
 function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
@@ -183,6 +193,11 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
     let s:neoview_id = s:neoview_id + 1
   endwhile
 
+  let view_fn = (a:view_fn == '') ? 'neoview#def_view_fn' : a:view_fn
+
+  if a:search_win_cmd != ''
+    exec a:search_win_cmd
+  endif
   call setwinvar(winnr(), 'neoview_s', s:neoview_id)
   enew
   exec 'setlocal statusline=-\ neoview\ ' . s:neoview_id . '\ -'
@@ -191,7 +206,7 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
     \ 'search_win_cmd' : a:search_win_cmd,
     \ 'search_bufnr' : bufnr('%'),
     \ 'preview_win_cmd' : a:preview_win_cmd,
-    \ 'view_fn' : a:view_fn,
+    \ 'view_fn' : view_fn,
     \ 'enable_preview' : 0,
     \ 'cur_bufnr' : -1,
     \ 'cur_bufnr_excl' : 0
