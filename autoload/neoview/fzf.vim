@@ -7,6 +7,9 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
+" Common options to be added to fzf unless 'arg.ignore_common_opt' is set.
+let g:neoview_fzf_common_opt = ''
+
 "------------------------------------------------------------------------------
 
 " Run fzf as the searcher.
@@ -25,12 +28,17 @@ set cpo&vim
 "               window.
 "
 " source - shell command which output is piped to fzf for selection. If empty,
-"          fzf is executed without input.
+"          fzf is executed without input. Example: 'rg --files'.
 "
 " view_fn - view function. If empty, the default view function is used, which
 "           opens the file in read only mode for preview, and opens the file
 "           in read/write mode when the candidate is selected.
 "           See neoview#def_view_fn() for reference.
+"
+" opt - a string containing custom fzf command line options. Combined with
+"       'g:neoview_fzf_common_opt' unless 'ignore_common_opt' is set.
+"
+" ignore_common_opt - if true, ignore 'g:neoview_fzf_common_opt'.
 "
 function! neoview#fzf#run(arg) "fzf_win_cmd, preview_win_cmd, source, view_fn)
   let id = neoview#create(
@@ -41,9 +49,18 @@ function! neoview#fzf#run(arg) "fzf_win_cmd, preview_win_cmd, source, view_fn)
   " We can't just use stdout because it will contain stuff from fzf interface.
   let out = tempname()
 
+  if has_key(a:arg, 'ignore_common_opt') && a:arg.ignore_common_opt
+    let fzf_opt = ''
+  else
+    let fzf_opt = g:neoview_fzf_common_opt
+  endif
+  if has_key(a:arg, 'opt')
+    let fzf_opt = fzf_opt . ' ' . a:arg.opt
+  endif
+
   let prefix = has_key(a:arg, 'source') ? '(' . a:arg.source . ')|' : ''
-  let fzf = 'fzf --preview="' . neoview#script_name() . ' ' . id .
-    \ ' {}" --preview-window=right:0 > ' . out
+  let fzf = 'fzf ' . fzf_opt . ' --preview="' . neoview#script_name() . ' ' .
+    \ id . ' {}" --preview-window=right:0 > ' . out
   let cmd = prefix . fzf
 
   let opts = { 'id' : id, 'out' : out }
