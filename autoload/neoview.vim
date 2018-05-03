@@ -174,6 +174,9 @@ endfunction
 
 "------------------------------------------------------------------------------
 
+" Default view function that expects a file name in 'context_str'.
+" If 'final' is 0, the function was called to preview the candidate.
+" If 'final' is 1, the function was called to select the candidate.
 function! neoview#def_view_fn(context_str, final)
   if a:final
     exec 'silent edit ' . a:context_str
