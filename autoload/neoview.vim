@@ -187,6 +187,20 @@ endfunction
 
 "------------------------------------------------------------------------------
 
+" Replace percentages with the actual line/column counts:
+"   %X is replaced with percentage of (&lines - &cmdheight)
+"   $X is replaced with percentage of &columns
+function! s:normalize_cmd(cmd)
+  let s = substitute(a:cmd, '%\(\d\+\)',
+    \ '\=float2nr(round(submatch(1) / 100.0 * (&lines - &cmdheight))) - 1',
+    \ 'g')
+  let s = substitute(s, '$\(\d\+\)',
+    \ '\=float2nr(round(submatch(1) / 100.0 * &columns)) - 1', 'g')
+  return s
+endfunction
+
+"------------------------------------------------------------------------------
+
 " Initialize context for a new neoview session. Returns the session id.
 " When the session is complete, neoview#close(id) must be called.
 function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
@@ -199,16 +213,19 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
   let view_fn = (a:view_fn == '') ? 'neoview#def_view_fn' : a:view_fn
 
   if a:search_win_cmd != ''
-    exec a:search_win_cmd
+    let search_win_cmd = s:normalize_cmd(a:search_win_cmd)
+    exec search_win_cmd
+  else
+    let search_win_cmd = ''
   endif
   call setwinvar(winnr(), 'neoview_s', s:neoview_id)
   enew
   exec 'setlocal statusline=-\ neoview\ ' . s:neoview_id . '\ -'
 
   let s:state[s:neoview_id] = {
-    \ 'search_win_cmd' : a:search_win_cmd,
+    \ 'search_win_cmd' : search_win_cmd,
     \ 'search_bufnr' : bufnr('%'),
-    \ 'preview_win_cmd' : a:preview_win_cmd,
+    \ 'preview_win_cmd' : s:normalize_cmd(a:preview_win_cmd),
     \ 'view_fn' : view_fn,
     \ 'enable_preview' : 0,
     \ 'cur_bufnr' : -1,
