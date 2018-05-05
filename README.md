@@ -8,4 +8,5 @@ Under construction.
 * Built-in sources: tags, ripgrep, idutils (?), buffers, windows, lines,
   maybe more
 * Possibility to start with preview on
+* Multi-selection
 * Documentation
