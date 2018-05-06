@@ -344,7 +344,8 @@ function! neoview#update(id, context_str)
 
   " Call the view function that will set the preview window content based
   " on the context_str. The 'final' argument is false.
-  exec 'call ' . state['view_fn'] . '(''' . a:context_str . ''', 0)'
+  let ctx = substitute(a:context_str, "'", "''", 'g')
+  exec 'call ' . state['view_fn'] . '(''' . ctx . ''', 0)'
 
   " Maybe delete the previously previewed buffer.
   let new_bufnr = winbufnr(preview_winnr)

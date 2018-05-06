@@ -78,6 +78,31 @@ function! neoview#fzf#run(arg) "fzf_win_cmd, preview_win_cmd, source, view_fn)
 endfunction
 
 "------------------------------------------------------------------------------
+" Ripgrep source
+"------------------------------------------------------------------------------
+
+function! neoview#fzf#ripgrep_view(ctx, final)
+  let m = matchlist(a:ctx, '\([^:]\+\):\(\d\+\)')
+  " m[1] - file name, m[2] - line number
+  if a:final
+    exec 'silent edit +' . m[2] . ' ' . m[1]
+  else
+    exec 'silent view +' . m[2] . ' ' . m[1]
+    exec '2match Search /\%'.line('.').'l/'
+    exec 'normal! zRzz'
+  endif
+endfunction
+
+function! neoview#fzf#ripgrep_arg(pattern)
+  let arg = {
+    \ 'source' : 'rg --line-number --no-heading --color=always ' . a:pattern,
+    \ 'opt' : '--ansi ',
+    \ 'view_fn' : 'neoview#fzf#ripgrep_view'
+    \ }
+  return arg
+endfunction
+
+"------------------------------------------------------------------------------
 
 " Restore cpo.
 let &cpo = s:save_cpo
