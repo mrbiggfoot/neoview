@@ -8,6 +8,6 @@ Under construction.
 - [ ] Built-in sources: tags, ripgrep, idutils (?), buffers, windows, lines,
   maybe more
 - [ ] Possibility to start with preview on
-- [ ] Multi-selection
+- [x] Multi-selection (pass list to the view function)
 - [ ] Reopen at the same position
 - [ ] Documentation

@@ -33,7 +33,7 @@ let g:neoview_fzf_common_opt = ''
 " view_fn - view function. If empty, the default view function is used, which
 "           opens the file in read only mode for preview, and opens the file
 "           in read/write mode when the candidate is selected.
-"           See neoview#def_view_fn() for reference.
+"           See "Default view functions" in autoload/neoview.vim for reference.
 "
 " opt - a string containing custom fzf command line options. Combined with
 "       'g:neoview_fzf_common_opt' unless 'ignore_common_opt' is set.
@@ -67,9 +67,9 @@ function! neoview#fzf#run(arg) "fzf_win_cmd, preview_win_cmd, source, view_fn)
   function! opts.on_exit(job_id, code, event)
     if a:code == 0
       let output = readfile(self.out)
-      call neoview#close(self.id, output[0])
+      call neoview#close(self.id, output)
     else
-      call neoview#close(self.id, '')
+      call neoview#close(self.id, [])
     endif
     call delete(self.out)
   endfunction
@@ -81,23 +81,11 @@ endfunction
 " Ripgrep source
 "------------------------------------------------------------------------------
 
-function! neoview#fzf#ripgrep_view(ctx, final)
-  let m = matchlist(a:ctx, '\([^:]\+\):\(\d\+\)')
-  " m[1] - file name, m[2] - line number
-  if a:final
-    exec 'silent edit +' . m[2] . ' ' . m[1]
-  else
-    exec 'silent view +' . m[2] . ' ' . m[1]
-    exec '2match Search /\%'.line('.').'l/'
-    exec 'normal! zRzz'
-  endif
-endfunction
-
 function! neoview#fzf#ripgrep_arg(pattern)
   let arg = {
     \ 'source' : 'rg --line-number --no-heading --color=always ' . a:pattern,
     \ 'opt' : '--ansi ',
-    \ 'view_fn' : 'neoview#fzf#ripgrep_view'
+    \ 'view_fn' : 'neoview#view_fileline'
     \ }
   return arg
 endfunction

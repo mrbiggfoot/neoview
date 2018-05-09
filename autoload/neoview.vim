@@ -36,7 +36,7 @@ let s:neoview_id = 0
 " search_win_cmd  - string, vim command to create the search window.
 " preview_win_cmd - string, vim command to create the preview window.
 " view_fn         - string, vim script function name to be called on
-"                   candidate for both preview and action.
+"                   candidate for both preview and candidate(s) selection.
 " enable_preview  - bool, whether preview window is enabled.
 " cur_bufnr       - int, buffer number displayed in the preview window.
 " cur_bufnr_excl  - bool, whether the buffer was created exclusively
@@ -173,15 +173,33 @@ function! neoview#toggle_preview()
 endfunction
 
 "------------------------------------------------------------------------------
-
-" Default view function that expects a file name in 'context_str'.
+" Default view functions
+"------------------------------------------------------------------------------
+" Signature:
+" 'ctx' - array of strings that contains the candidates to preview or select.
 " If 'final' is 0, the function was called to preview the candidate.
 " If 'final' is 1, the function was called to select the candidate.
-function! neoview#def_view_fn(context_str, final)
+
+" View function that expects a file name string in 'ctx[0]'.
+function! neoview#view_file(ctx, final)
   if a:final
-    exec 'silent edit ' . a:context_str
+    exec 'silent edit ' . a:ctx[0]
   else
-    exec 'silent view ' . a:context_str
+    exec 'silent view ' . a:ctx[0]
+  endif
+endfunction
+
+" View function that expects file:line at the beginning of ctx[0].
+" Opens all folds on preview and centers the previewed line.
+function! neoview#view_fileline(ctx, final)
+  let m = matchlist(a:ctx[0], '\([^:]\+\):\(\d\+\)')
+  " m[1] - file name, m[2] - line number
+  if a:final
+    exec 'silent edit +' . m[2] . ' ' . m[1]
+  else
+    exec 'silent view +' . m[2] . ' ' . m[1]
+    exec '2match Search /\%'.line('.').'l/'
+    exec 'normal! zRzz'
   endif
 endfunction
 
@@ -216,7 +234,7 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
     let s:neoview_id = s:neoview_id + 1
   endwhile
 
-  let view_fn = (a:view_fn == '') ? 'neoview#def_view_fn' : a:view_fn
+  let view_fn = (a:view_fn == '') ? 'neoview#view_file' : a:view_fn
 
   let lim_width = &columns
   let lim_height = &lines - &cmdheight - 2
@@ -253,7 +271,7 @@ endfunction
 "------------------------------------------------------------------------------
 
 " Destroy the context of neoview session. Also, closes the preview window if
-" required. If view_context is not empty, call view_fn(view_context).
+" required. If view_context list is not empty, call view_fn(view_context, 1).
 function! neoview#close(id, view_context)
   let state = s:state[a:id]
   call s:close_preview(a:id)
@@ -271,15 +289,15 @@ function! neoview#close(id, view_context)
   exec 'bd! ' . state.search_bufnr
 
   " Call view function with 'final' = true.
-  if a:view_context != ''
-    exec 'call ' . state['view_fn'] . '(''' . a:view_context . ''', 1)'
+  if len(a:view_context) > 0
+    exec 'call ' . state['view_fn'] . '(a:view_context, 1)'
   endif
   unlet s:state[a:id]
 endfunction
 
 "------------------------------------------------------------------------------
 
-" Open preview window if required and call view_fn(context_str).
+" Open preview window if required and call view_fn([context_str], 0).
 function! neoview#update(id, context_str)
   let state = s:state[a:id]
   let state.context_str = a:context_str
@@ -345,7 +363,7 @@ function! neoview#update(id, context_str)
   " Call the view function that will set the preview window content based
   " on the context_str. The 'final' argument is false.
   let ctx = substitute(a:context_str, "'", "''", 'g')
-  exec 'call ' . state['view_fn'] . '(''' . ctx . ''', 0)'
+  exec 'call ' . state['view_fn'] . '([''' . ctx . '''], 0)'
 
   " Maybe delete the previously previewed buffer.
   let new_bufnr = winbufnr(preview_winnr)
