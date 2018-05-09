@@ -8,7 +8,9 @@ let s:save_cpo = &cpo
 set cpo&vim
 
 " Common options to be added to fzf unless 'arg.ignore_common_opt' is set.
-let g:neoview_fzf_common_opt = ''
+if !exists('g:neoview_fzf_common_opt')
+  let g:neoview_fzf_common_opt = ''
+endif
 
 "------------------------------------------------------------------------------
 

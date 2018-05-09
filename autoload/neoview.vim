@@ -183,7 +183,9 @@ endfunction
 " View function that expects a file name string in 'ctx[0]'.
 function! neoview#view_file(ctx, final)
   if a:final
-    exec 'silent edit ' . a:ctx[0]
+    for f in a:ctx
+      exec 'silent edit ' . f
+    endfor
   else
     exec 'silent view ' . a:ctx[0]
   endif
@@ -192,11 +194,14 @@ endfunction
 " View function that expects file:line at the beginning of ctx[0].
 " Opens all folds on preview and centers the previewed line.
 function! neoview#view_fileline(ctx, final)
-  let m = matchlist(a:ctx[0], '\([^:]\+\):\(\d\+\)')
   " m[1] - file name, m[2] - line number
   if a:final
-    exec 'silent edit +' . m[2] . ' ' . m[1]
+    for f in a:ctx
+      let m = matchlist(f, '\([^:]\+\):\(\d\+\)')
+      exec 'silent edit +' . m[2] . ' ' . m[1]
+    endfor
   else
+    let m = matchlist(a:ctx[0], '\([^:]\+\):\(\d\+\)')
     exec 'silent view +' . m[2] . ' ' . m[1]
     exec '2match Search /\%'.line('.').'l/'
     exec 'normal! zRzz'
