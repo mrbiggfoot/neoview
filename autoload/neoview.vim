@@ -241,7 +241,7 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
 
   let view_fn = (a:view_fn == '') ? 'neoview#view_file' : a:view_fn
 
-  let lim_width = &columns
+  let lim_width = &columns - 1
   let lim_height = &lines - &cmdheight - 2
 
   if a:search_win_cmd != ''
