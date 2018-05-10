@@ -11,3 +11,4 @@ Under construction.
 - [x] Multi-selection (pass list to the view function)
 - [ ] Reopen at the same position
 - [ ] Documentation
+- [ ] Vim compatibility
