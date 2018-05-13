@@ -25,6 +25,8 @@ COLOR_LINE      = ''
 COLOR_COMMENT   = '\033[0;32m'
 COLOR_RESET     = '\033[0m'
 
+MAX_DISPLAY_PATH_LEN = 80
+
 tagname = sys.argv[1]
 tagfile = sys.argv[2]
 tagfiledir = os.path.dirname(os.path.abspath(tagfile))
@@ -38,12 +40,14 @@ tags = []
 # Initially line_str is None, meaning that the line needs resolution.
 resolve_lines = {}
 
-# Max length of a relative path.
+# Max length of a relative path to display.
 max_rpath_len = 0
 
 
 # Return displayable info string based on the passed info
 def displayable_info(path, line, comment):
+    if len(path) > max_rpath_len:
+        path = '<' + path[-max_rpath_len + 1:]
     cs = comment.split("\t", 1)
     return ('{}[{}]{} {}{:<' + str(max_rpath_len) + '}{}: {}{}{}\t{}{}{}').\
         format(
@@ -63,7 +67,7 @@ for l in out:
     # info[0] - tag address, info[1] - comment
     info = t[2].split(';"')
     rpath = os.path.relpath("%s/%s" % (tagfiledir, t[1]))
-    rpath_len = len(rpath)
+    rpath_len = min(len(rpath), MAX_DISPLAY_PATH_LEN)
     if (rpath_len > max_rpath_len):
         max_rpath_len = rpath_len
 
@@ -102,5 +106,4 @@ for t in tags:
         line = displayable_info(t[0], resolve_lines[t[0]][t[1]], t[2])
     else:
         line = displayable_info(t[0], t[1][2:-2], t[2])
-    print('%s' % line)
-    #print('%s\0%s\0%s' % (t[0], t[1], line))
+    print('%s\0%s\0%s' % (t[0], t[1], line))
