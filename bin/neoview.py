@@ -15,7 +15,7 @@ from neovim import attach
 
 if len(sys.argv) != 3:
     sys.stderr.write(
-        "Usage: %s <id> \"<context_str>\"\n" %
+        'Usage: %s <id> "<context_str>"\n' %
         sys.argv[0])
     sys.exit(1)
 
