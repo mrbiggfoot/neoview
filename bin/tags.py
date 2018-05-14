@@ -28,11 +28,11 @@ tagfiledir = os.path.dirname(os.path.abspath(tagfile))
 
 # Colors for the output, see for more info:
 # https://en.wikipedia.org/wiki/ANSI_escape_code#3/4_bit
-COLOR_TAGTYPE   = '\033[1;35m'
-COLOR_PATH      = '\033[1;34m'
-COLOR_LINE      = ''
-COLOR_COMMENT   = '\033[0;32m'
-COLOR_RESET     = '\033[0m'
+COLOR_TAGTYPE = '\033[1;35m'
+COLOR_PATH = '\033[1;34m'
+COLOR_LINE = ''
+COLOR_COMMENT = '\033[0;32m'
+COLOR_RESET = '\033[0m'
 
 MAX_DISPLAY_PATH_LEN = 80
 
@@ -54,22 +54,31 @@ def displayable_info(path, line, comment):
     if len(path) > max_rpath_len:
         path = '<' + path[-max_rpath_len + 1:]
     cs = comment.split("\t", 1)
-    return ('{}[{}]{} {}{:<' + str(max_rpath_len) + '}{}: {}{}{}\t{}{}{}').\
+    return ('{}{:<' + str(max_rpath_len) + '}{} {}{}{} {}{}{}\t{}{}{}').\
         format(
-            COLOR_TAGTYPE, cs[0], COLOR_RESET,
             COLOR_PATH, path, COLOR_RESET,
+            COLOR_TAGTYPE, cs[0], COLOR_RESET,
             COLOR_LINE, line, COLOR_RESET,
             COLOR_COMMENT, cs[1] if len(cs) is 2 else "", COLOR_RESET)
+
+# Find the lines we need to process
+if ignore_case:
+    out = subprocess.getoutput('(look %s %s; look %s %s) | '
+                               'rg --color never -N -i -w "^%s"' %
+                               (tagname[0].upper(),
+                                tagfile,
+                                tagname[0].lower(),
+                                tagfile,
+                                tagname)).split("\n")
+else:
+    out = subprocess.getoutput('look "%s" %s | rg --color never -N -w "^%s"' %
+                               (tagname,
+                                tagfile,
+                                tagname)).split("\n")
 
 #
 # Create 'tags' and 'resolve_lines'
 #
-out = subprocess.getoutput('look %s "%s" %s | grep -w %s "^%s"' %
-                           ("-f" if ignore_case else "",
-                            tagname,
-                            tagfile,
-                            "-i" if ignore_case else "",
-                            tagname)).split("\n")
 for l in out:
     # t[0] - tag name, t[1] - file name, t[2] - tag address and comment
     t = l.split("\t", 2)
