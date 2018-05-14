@@ -9,13 +9,22 @@ Find exactly matching tags in the specified tags file.
 Output: {file_name}\0{tag_address}\0{displayable_tag_info}
 Note: tags should be generated with "--tag-relative=yes".
 """
+import argparse
 import os
 import subprocess
-import sys
 
-if len(sys.argv) != 3:
-    sys.stderr.write('Usage: %s <tagname> <tagfile>\n' % sys.argv[0])
-    sys.exit(1)
+# Parse command line args.
+parser = argparse.ArgumentParser()
+parser.add_argument("tagname", help="Name of the tag to search")
+parser.add_argument("tagfile", help="Tags file name")
+parser.add_argument("-i", "--ignore-case", help="Ignore case",
+                    action="store_true")
+args = parser.parse_args()
+
+tagname = args.tagname
+tagfile = args.tagfile
+ignore_case = args.ignore_case
+tagfiledir = os.path.dirname(os.path.abspath(tagfile))
 
 # Colors for the output, see for more info:
 # https://en.wikipedia.org/wiki/ANSI_escape_code#3/4_bit
@@ -26,10 +35,6 @@ COLOR_COMMENT   = '\033[0;32m'
 COLOR_RESET     = '\033[0m'
 
 MAX_DISPLAY_PATH_LEN = 80
-
-tagname = sys.argv[1]
-tagfile = sys.argv[2]
-tagfiledir = os.path.dirname(os.path.abspath(tagfile))
 
 # Contains lists of [file_name, tag_address, comment].
 # 'file_name' is relative to the current directory.
@@ -59,8 +64,12 @@ def displayable_info(path, line, comment):
 #
 # Create 'tags' and 'resolve_lines'
 #
-out = subprocess.getoutput('look "%s" %s | grep -w "^%s"' %
-                           (tagname, tagfile, tagname)).split("\n")
+out = subprocess.getoutput('look %s "%s" %s | grep -w %s "^%s"' %
+                           ("-f" if ignore_case else "",
+                            tagname,
+                            tagfile,
+                            "-i" if ignore_case else "",
+                            tagname)).split("\n")
 for l in out:
     # t[0] - tag name, t[1] - file name, t[2] - tag address and comment
     t = l.split("\t", 2)
