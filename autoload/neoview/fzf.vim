@@ -93,6 +93,28 @@ function! neoview#fzf#ripgrep_arg(pattern)
 endfunction
 
 "------------------------------------------------------------------------------
+" Tags source
+"------------------------------------------------------------------------------
+
+" Search for tagname in the tag files passed in the variable args.
+function! neoview#fzf#tags_arg(tagname, ignore_case, ...)
+  let src = ''
+  let searcher = neoview#tag_searcher_name() . ' '
+  if a:ignore_case
+    let searcher = searcher . ' -i '
+  endif
+  for f in a:000
+    let src = src . searcher . a:tagname . ' ' . f . ';'
+  endfor
+  let arg = {
+    \ 'source' : src,
+    \ 'opt' : '--ansi --delimiter="\t" --with-nth=3.. ',
+    \ 'view_fn' : 'neoview#view_file_excmd'
+    \ }
+  return arg
+endfunction
+
+"------------------------------------------------------------------------------
 
 " Restore cpo.
 let &cpo = s:save_cpo

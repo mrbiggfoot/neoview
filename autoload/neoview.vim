@@ -63,6 +63,11 @@ function! neoview#script_name()
   return s:preview_script
 endfunction
 
+" Get tag searcher script name.
+function! neoview#tag_searcher_name()
+  return s:bin_dir.'tags.py'
+endfunction
+
 "------------------------------------------------------------------------------
 
 " If the buffer displayed exclusively by neoview is opened in another window,
@@ -203,6 +208,28 @@ function! neoview#view_fileline(ctx, final)
   else
     let m = matchlist(a:ctx[0], '\([^:]\+\):\(\d\+\)')
     exec 'silent view +' . m[2] . ' ' . m[1]
+    exec '2match Search /\%'.line('.').'l/'
+    exec 'normal! zRzz'
+  endif
+endfunction
+
+" View function that expects file\0excmd\0... lines in ctx.
+" Opens all folds on preview and centers the previewed line.
+function! neoview#view_file_excmd(ctx, final)
+  function! EscapeCmd(excmd)
+    let cmd = substitute(a:excmd, '\\', '\\\\', 'g')
+    let cmd = substitute(cmd, ' ', '\\ ', 'g')
+    return cmd
+  endfunction
+  " m[0] - file name, m[1] - ex cmd
+  if a:final
+    for ln in a:ctx
+      let m = split(ln, '\t')
+      exec 'silent edit +' . EscapeCmd(m[1]) . ' ' . m[0]
+    endfor
+  else
+    let m = split(a:ctx[0], '\t')
+    exec 'silent view +' . EscapeCmd(m[1]) . ' ' . m[0]
     exec '2match Search /\%'.line('.').'l/'
     exec 'normal! zRzz'
   endif

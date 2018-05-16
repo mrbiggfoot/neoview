@@ -6,7 +6,7 @@
 #
 """
 Find exactly matching tags in the specified tags file.
-Output: {file_name}\0{tag_address}\0{displayable_tag_info}
+Output: {file_name}\t{tag_address}\t{displayable_tag_info}
 Note: tags should be generated with "--tag-relative=yes".
 """
 import argparse
@@ -84,7 +84,10 @@ for l in out:
     t = l.split("\t", 2)
     # info[0] - tag address, info[1] - comment
     info = t[2].split(';"')
-    rpath = os.path.relpath("%s/%s" % (tagfiledir, t[1]))
+    if t[1][0] is '/':
+        rpath = os.path.relpath(t[1])
+    else:
+        rpath = os.path.relpath("%s/%s" % (tagfiledir, t[1]))
     rpath_len = min(len(rpath), MAX_DISPLAY_PATH_LEN)
     if (rpath_len > max_rpath_len):
         max_rpath_len = rpath_len
@@ -124,4 +127,4 @@ for t in tags:
         line = displayable_info(t[0], resolve_lines[t[0]][t[1]], t[2])
     else:
         line = displayable_info(t[0], t[1][2:-2], t[2])
-    print('%s\0%s\0%s' % (t[0], t[1], line))
+    print('%s\t%s\t%s' % (t[0], t[1], line))
