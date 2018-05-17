@@ -79,9 +79,6 @@ function! s:make_nonexclusive()
     for state in values(s:state)
       if cur_bufnr == state.cur_bufnr && state.cur_bufnr_excl
         let state.cur_bufnr_excl = 0
-        if exists('g:ale_enabled')
-          ALEEnableBuffer
-        endif
       endif
     endfor
   endif
@@ -192,7 +189,7 @@ function! neoview#view_file(ctx, final)
       exec 'silent edit ' . f
     endfor
   else
-    exec 'silent view ' . a:ctx[0]
+    exec 'silent edit ' . a:ctx[0]
   endif
 endfunction
 
@@ -207,7 +204,7 @@ function! neoview#view_fileline(ctx, final)
     endfor
   else
     let m = matchlist(a:ctx[0], '\([^:]\+\):\(\d\+\)')
-    exec 'silent view +' . m[2] . ' ' . m[1]
+    exec 'silent edit +' . m[2] . ' ' . m[1]
     exec '2match Search /\%'.line('.').'l/'
     exec 'normal! zRzz'
   endif
@@ -229,7 +226,7 @@ function! neoview#view_file_excmd(ctx, final)
     endfor
   else
     let m = split(a:ctx[0], '\t')
-    exec 'silent view +' . EscapeCmd(m[1]) . ' ' . m[0]
+    exec 'silent edit +' . EscapeCmd(m[1]) . ' ' . m[0]
     exec '2match Search /\%'.line('.').'l/'
     exec 'normal! zRzz'
   endif
@@ -402,10 +399,6 @@ function! neoview#update(id, context_str)
   if new_bufnr != cur_bufnr
     let cur_bufnr_excl =
       \(index(bufnames, getbufinfo(new_bufnr)[0]['name']) == -1)
-    if cur_bufnr_excl && exists('g:ale_enabled')
-      " Disable ALE if the buffer is opened exclusively for neoview.
-      ALEDisableBuffer
-    endif
     let state.cur_bufnr = new_bufnr
     let state.cur_bufnr_excl = cur_bufnr_excl
     if exists('del_buf')

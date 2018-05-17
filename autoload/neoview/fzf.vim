@@ -83,9 +83,10 @@ endfunction
 " Ripgrep source
 "------------------------------------------------------------------------------
 
-function! neoview#fzf#ripgrep_arg(pattern)
+function! neoview#fzf#ripgrep_arg(pattern, rg_opt)
   let arg = {
-    \ 'source' : 'rg --line-number --no-heading --color=always ' . a:pattern,
+    \ 'source' : 'rg --line-number --no-heading --color=always ' . a:rg_opt .
+    \            ' ' . a:pattern,
     \ 'opt' : '--ansi ',
     \ 'view_fn' : 'neoview#view_fileline'
     \ }
