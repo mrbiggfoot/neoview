@@ -301,6 +301,9 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn,
     let s:neoview_id = s:neoview_id + 1
   endwhile
 
+  " Set original window info to be able to go back to it when we are done.
+  call setwinvar(winnr(), 'neoview_orig', s:neoview_id)
+
   let view_fn = (a:view_fn == '') ? 'neoview#view_file' : a:view_fn
 
   if a:search_win_cmd != ''
@@ -357,7 +360,14 @@ function! neoview#close(id, view_context)
   endif
 
   " Close the search buffer.
-  exec 'bd! ' . state.search_bufnr
+  exec 'bw! ' . state.search_bufnr
+
+  " Go back to the originating window.
+  let orig_nr = s:neoview_winnr(a:id, 'neoview_orig')
+  if nr
+    exec orig_nr . 'wincmd w'
+    unlet w:neoview_orig
+  endif
 
   " Call view function with 'final' = true.
   if len(a:view_context) > 0
