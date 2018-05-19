@@ -46,7 +46,8 @@ function! neoview#fzf#run(arg) "fzf_win_cmd, preview_win_cmd, source, view_fn)
   let id = neoview#create(
     \ has_key(a:arg, 'fzf_win') ? a:arg.fzf_win : '',
     \ has_key(a:arg, 'preview_win') ? a:arg.preview_win : '',
-    \ has_key(a:arg, 'view_fn') ? a:arg.view_fn : '')
+    \ has_key(a:arg, 'view_fn') ? a:arg.view_fn : '',
+    \ 'neoview#adjust_fzf_win_sizes')
 
   " We can't just use stdout because it will contain stuff from fzf interface.
   let out = tempname()

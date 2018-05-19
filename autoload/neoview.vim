@@ -16,6 +16,10 @@ if !exists('g:neoview_toggle_preview')
   let g:neoview_toggle_preview = '<F1>'
 endif
 
+if !exists('g:neoview_enable_dyn_size')
+  let g:neoview_enable_dyn_size = v:true
+endif
+
 exec 'tmap <silent> ' . g:neoview_toggle_preview .
   \ ' <C-\><C-n>:call neoview#toggle_preview()<CR>'
 exec 'nmap <silent> ' . g:neoview_toggle_preview .
@@ -27,6 +31,7 @@ exec 'nmap <silent> ' . g:neoview_toggle_preview .
 let s:bin_dir = expand('<sfile>:h:h').'/bin/'
 let s:preview_script = s:bin_dir.'neoview.py'
 let s:neoview_id = 0
+let s:timer_id = -1
 
 " Maps neoview_id to the current state. An entry is added by neoview#create()
 " and removed by neoview#close() calls.
@@ -66,6 +71,38 @@ endfunction
 " Get tag searcher script name.
 function! neoview#tag_searcher_name()
   return s:bin_dir.'tags.py'
+endfunction
+
+"------------------------------------------------------------------------------
+
+" Adjust 'fzf' window sizes based on a hack that either the 2nd or next to
+" the last line contains "N/M", where N is the number of shown matches and
+" M is the total number of matches.
+function! neoview#adjust_fzf_win_sizes(timer_id)
+  let cur_winnr = winnr()
+  for nr in range(1, winnr('$'))
+    if getwinvar(nr, 'neoview_s')
+      let bufnr = winbufnr(nr)
+      let h0 = getwinvar(nr, 'neoview_h0', 1000)
+
+      let m = matchlist(getbufline(bufnr, 2), '..\(\d\+\)/\(\d\+\)')
+      if empty(m)
+        let m =
+          \ matchlist(getbufline(bufnr, line('$') - 1), '..\(\d\+\)/\(\d\+\)')
+        if empty(m)
+          continue
+        endif
+      endif
+
+      " m[1] now has the number of candidates displayed.
+      let cur_h = min([h0, m[1] + 2])
+      if cur_h != winheight(nr)
+        exec nr . 'wincmd w'
+        exec 'resize ' . cur_h
+      endif
+    endif
+  endfor
+  exec cur_winnr . 'wincmd w'
 endfunction
 
 "------------------------------------------------------------------------------
@@ -256,7 +293,8 @@ endfunction
 
 " Initialize context for a new neoview session. Returns the session id.
 " When the session is complete, neoview#close(id) must be called.
-function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
+function! neoview#create(search_win_cmd, preview_win_cmd, view_fn,
+                         \ adjust_win_sizes_fn)
   let s:neoview_id = s:neoview_id + 1
   " Deal with overflow.
   while (has_key(s:state, s:neoview_id) || s:neoview_id == 0)
@@ -279,6 +317,7 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
   endif
 
   call setwinvar(winnr(), 'neoview_s', s:neoview_id)
+  call setwinvar(winnr(), 'neoview_h0', winheight('%'))
   enew
   exec 'setlocal statusline=-\ neoview\ ' . s:neoview_id . '\ -'
 
@@ -294,6 +333,15 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn)
     \ 'cur_bufnr' : -1,
     \ 'cur_bufnr_excl' : 0
     \ }
+
+  if g:neoview_enable_dyn_size && a:adjust_win_sizes_fn != ''
+    " Start the update timer if we just created the first state.
+    if len(s:state) == 1
+      let s:timer_id =
+        \ timer_start(50, a:adjust_win_sizes_fn, {'repeat' : -1})
+    endif
+  endif
+
   return s:neoview_id
 endfunction
 
@@ -322,6 +370,11 @@ function! neoview#close(id, view_context)
     exec 'call ' . state['view_fn'] . '(a:view_context, 1)'
   endif
   unlet s:state[a:id]
+
+  if len(s:state) == 0 && s:timer_id != -1
+    call timer_stop(s:timer_id)
+    let s:timer_id = -1
+  endif
 endfunction
 
 "------------------------------------------------------------------------------
