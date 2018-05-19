@@ -303,15 +303,12 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn,
 
   let view_fn = (a:view_fn == '') ? 'neoview#view_file' : a:view_fn
 
-  let lim_width = &columns - 1
-  let lim_height = &lines - &cmdheight - 2
-
   if a:search_win_cmd != ''
+    let lim_width = &columns - 1
+    let lim_height = &lines - &cmdheight - 2
     let search_win_cmd =
       \ s:normalize_cmd(a:search_win_cmd, lim_width, lim_height)
     exec search_win_cmd
-    let lim_width = lim_width - winwidth('%') - 1
-    let lim_height = lim_height - winheight('%') - 1
   else
     let search_win_cmd = ''
   endif
@@ -321,13 +318,10 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn,
   enew
   exec 'setlocal statusline=-\ neoview\ ' . s:neoview_id . '\ -'
 
-  let preview_win_cmd =
-    \ s:normalize_cmd(a:preview_win_cmd, lim_width, lim_height)
-
   let s:state[s:neoview_id] = {
     \ 'search_win_cmd' : search_win_cmd,
     \ 'search_bufnr' : bufnr('%'),
-    \ 'preview_win_cmd' : preview_win_cmd,
+    \ 'preview_win_cmd' : a:preview_win_cmd,
     \ 'view_fn' : view_fn,
     \ 'enable_preview' : 0,
     \ 'cur_bufnr' : -1,
@@ -390,11 +384,14 @@ function! neoview#update(id, context_str)
   " Find out preview window number.
   let preview_winnr = s:neoview_winnr(a:id, 'neoview_p')
   if !preview_winnr
+    let search_winnr = s:neoview_winnr(a:id, 'neoview_s')
     if state.preview_win_cmd != ''
-      exec state.preview_win_cmd
+      let preview_win_cmd = s:normalize_cmd(state.preview_win_cmd,
+        \ &columns - winwidth(search_winnr) - 2,
+        \ &lines - &cmdheight - winheight(search_winnr) - 3)
+      exec preview_win_cmd
       let preview_winnr = winnr()
     else
-      let search_winnr = s:neoview_winnr(a:id, 'neoview_s')
       exec search_winnr . 'wincmd w'
       wincmd k
       let preview_winnr = winnr()
