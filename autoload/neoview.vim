@@ -75,6 +75,30 @@ endfunction
 
 "------------------------------------------------------------------------------
 
+" Send keystrokes to the preview window. If called not from a preview or
+" a search window, becomes a no op.
+function! neoview#feed_keys_to_preview(keys)
+  let id = getwinvar(winnr(), 'neoview_s')
+  if id
+    let nr = s:neoview_winnr(id, 'neoview_p')
+    if nr
+      exec nr . 'wincmd w'
+      call feedkeys(a:keys, 'x')
+      wincmd p
+    endif
+    startinsert
+  else
+    let nr = winnr()
+    let id = getwinvar(nr, 'neoview_p')
+    if !id
+      return
+    endif
+    call feedkeys(a:keys, 'x')
+  endif
+endfunction
+
+"------------------------------------------------------------------------------
+
 " Adjust 'fzf' window sizes based on a hack that either the 2nd or next to
 " the last line contains "N/M", where N is the number of shown matches and
 " M is the total number of matches.
@@ -242,7 +266,7 @@ function! neoview#view_fileline(ctx, final)
   else
     let m = matchlist(a:ctx[0], '\([^:]\+\):\(\d\+\)')
     exec 'silent edit +' . m[2] . ' ' . m[1]
-    exec '2match Search /\%'.line('.').'l/'
+    exec 'match Search /\%'.line('.').'l/'
     exec 'normal! zRzz'
   endif
 endfunction
@@ -264,7 +288,7 @@ function! neoview#view_file_excmd(ctx, final)
   else
     let m = split(a:ctx[0], '\t')
     exec 'silent edit +' . EscapeCmd(m[1]) . ' ' . m[0]
-    exec '2match Search /\%'.line('.').'l/'
+    exec 'match Search /\%'.line('.').'l/'
     exec 'normal! zRzz'
   endif
 endfunction
