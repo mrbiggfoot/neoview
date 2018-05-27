@@ -243,14 +243,35 @@ endfunction
 " If 'final' is 0, the function was called to preview the candidate.
 " If 'final' is 1, the function was called to select the candidate.
 
+" Helper function to show file which may contain changes.
+" Simple 'edit' returns E37 in this case, and this function handles it.
+function! s:show_file(filename, excmd)
+  try
+    if a:excmd != ''
+      exec 'silent edit +' . a:excmd . ' ' . a:filename
+    else
+      exec 'silent edit ' . a:filename
+    endif
+  catch /^Vim\%((\a\+)\)\=:E37/
+    " E37: No write since last change (add ! to override)
+    let nr = bufnr(a:filename)
+    if nr == -1
+      echoerr 'Buffer does not exist for ' . a:filename
+      return
+    endif
+    exec 'silent b ' . nr
+    exec a:excmd
+  endtry
+endfunction
+
 " View function that expects a file name string in 'ctx[0]'.
 function! neoview#view_file(ctx, final)
   if a:final
     for f in a:ctx
-      exec 'silent edit ' . f
+      call s:show_file(f, '')
     endfor
   else
-    exec 'silent edit ' . a:ctx[0]
+    call s:show_file(a:ctx[0], '')
   endif
 endfunction
 
@@ -261,17 +282,17 @@ function! neoview#view_fileline(ctx, final)
   if a:final
     for f in a:ctx
       let m = matchlist(f, '\([^:]\+\):\(\d\+\)')
-      exec 'silent edit +' . m[2] . ' ' . m[1]
+      call s:show_file(m[1], m[2])
     endfor
   else
     let m = matchlist(a:ctx[0], '\([^:]\+\):\(\d\+\)')
-    exec 'silent edit +' . m[2] . ' ' . m[1]
+    call s:show_file(m[1], m[2])
     exec 'match Search /\%'.line('.').'l/'
     exec 'normal! zRzz'
   endif
 endfunction
 
-" View function that expects file\0excmd\0... lines in ctx.
+" View function that expects file\texcmd\t... lines in ctx.
 " Opens all folds on preview and centers the previewed line.
 function! neoview#view_file_excmd(ctx, final)
   function! EscapeCmd(excmd)
@@ -283,11 +304,11 @@ function! neoview#view_file_excmd(ctx, final)
   if a:final
     for ln in a:ctx
       let m = split(ln, '\t')
-      exec 'silent edit +' . EscapeCmd(m[1]) . ' ' . m[0]
+      call s:show_file(m[0], EscapeCmd(m[1]))
     endfor
   else
     let m = split(a:ctx[0], '\t')
-    exec 'silent edit +' . EscapeCmd(m[1]) . ' ' . m[0]
+    call s:show_file(m[0], EscapeCmd(m[1]))
     exec 'match Search /\%'.line('.').'l/'
     exec 'normal! zRzz'
   endif
