@@ -12,6 +12,13 @@ if !exists('g:neoview_fzf_common_opt')
   let g:neoview_fzf_common_opt = ''
 endif
 
+" Resume-related vars.
+let s:last_arg = {}
+let s:last_id = 0
+let s:last_job_id = 0
+let s:last_candidates = ''
+let s:history = ''
+
 "------------------------------------------------------------------------------
 
 " Run fzf as the searcher.
@@ -42,28 +49,83 @@ endif
 "
 " ignore_common_opt - if true, ignore 'g:neoview_fzf_common_opt'.
 "
-function! neoview#fzf#run(arg) "fzf_win_cmd, preview_win_cmd, source, view_fn)
+function! neoview#fzf#run(arg)
+  let new_session = v:false
+  if a:arg == {}
+    if s:last_arg == {}
+      echoerr "No neoview session to resume"
+      return
+    endif
+    let arg = s:last_arg
+  else
+    let arg = a:arg
+    let new_session = v:true
+  endif
+
+  if !new_session && neoview#is_running(s:last_id)
+    " Close the running search.
+    if s:last_job_id <= 0
+      echoerr "Invalid s:last_job_id " . s:last_job_id
+      return
+    endif
+    call chansend(s:last_job_id, "\<Esc>")
+    let rc = jobwait([s:last_job_id], 3000)
+    if rc[0] == -1
+      call jobstop(s:last_job_id)
+    endif
+    if neoview#is_running(s:last_id)
+      echoerr "Failed to stop job " . s:last_job_id
+    else
+      let s:last_job_id = 0
+    endif
+    return
+  endif
+
   let id = neoview#create(
-    \ has_key(a:arg, 'fzf_win') ? a:arg.fzf_win : '',
-    \ has_key(a:arg, 'preview_win') ? a:arg.preview_win : '',
-    \ has_key(a:arg, 'view_fn') ? a:arg.view_fn : '',
+    \ has_key(arg, 'fzf_win') ? arg.fzf_win : '',
+    \ has_key(arg, 'preview_win') ? arg.preview_win : '',
+    \ has_key(arg, 'view_fn') ? arg.view_fn : '',
     \ 'neoview#adjust_fzf_win_sizes')
+  let s:last_id = id
 
   " We can't just use stdout because it will contain stuff from fzf interface.
   let out = tempname()
 
-  if has_key(a:arg, 'ignore_common_opt') && a:arg.ignore_common_opt
+  if new_session
+    " Store the arguments in case we need to resume the session later.
+    let s:last_arg = arg
+
+    " Store candidates in case we need to resume the session later.
+    if s:last_candidates != ''
+      call delete(s:last_candidates)
+    endif
+    let s:last_candidates = tempname()
+
+    " Start new history for the new session.
+    if s:history != ''
+      call delete(s:history)
+    endif
+    let s:history = tempname()
+  endif
+
+  if has_key(arg, 'ignore_common_opt') && arg.ignore_common_opt
     let fzf_opt = ''
   else
     let fzf_opt = g:neoview_fzf_common_opt
   endif
-  if has_key(a:arg, 'opt')
-    let fzf_opt = fzf_opt . ' ' . a:arg.opt
+  if has_key(arg, 'opt')
+    let fzf_opt = fzf_opt . ' ' . arg.opt
   endif
 
-  let prefix = has_key(a:arg, 'source') ? '(' . a:arg.source . ')|' : ''
+  if new_session
+    let prefix = has_key(arg, 'source') ?
+      \ '(' . arg.source . ')|tee ' . s:last_candidates . '|' : ''
+  else
+    let prefix = has_key(arg, 'source') ?
+      \ 'cat ' . s:last_candidates . '|' : ''
+  endif
   let fzf = 'fzf ' . fzf_opt . ' --preview="' . neoview#script_name() . ' ' .
-    \ id . ' {}" --preview-window=right:0 > ' . out
+    \ id . ' {}" --preview-window=right:0 --history=' . s:history . ' >' . out
   let cmd = prefix . fzf
 
   let opts = { 'id' : id, 'out' : out }
@@ -77,7 +139,12 @@ function! neoview#fzf#run(arg) "fzf_win_cmd, preview_win_cmd, source, view_fn)
     call delete(self.out)
   endfunction
 
-  call termopen(cmd, opts)
+  let s:last_job_id = termopen(cmd, opts)
+  if !new_session
+    " For some reason, fzf does not react to the keys without the sleep.
+    sleep 20m
+    call chansend(s:last_job_id, "\<C-p>")
+  endif
 endfunction
 
 "------------------------------------------------------------------------------

@@ -389,6 +389,13 @@ endfunction
 
 "------------------------------------------------------------------------------
 
+" Returns true if a neoview session with the specified id is already running.
+function! neoview#is_running(id)
+  return has_key(s:state, a:id)
+endfunction
+
+"------------------------------------------------------------------------------
+
 " Destroy the context of neoview session. Also, closes the preview window if
 " required. If view_context list is not empty, call view_fn(view_context, 1).
 function! neoview#close(id, view_context)
