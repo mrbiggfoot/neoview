@@ -68,7 +68,8 @@ function! neoview#fzf#run(arg)
       echoerr "Invalid s:last_job_id " . s:last_job_id
       return
     endif
-    call chansend(s:last_job_id, "\<Esc>")
+    let s:ignore_selection = 1
+    call chansend(s:last_job_id, "\<CR>")
     let rc = jobwait([s:last_job_id], 3000)
     if rc[0] == -1
       call jobstop(s:last_job_id)
@@ -78,6 +79,7 @@ function! neoview#fzf#run(arg)
     else
       let s:last_job_id = 0
     endif
+    unlet s:ignore_selection
     return
   endif
 
@@ -130,7 +132,7 @@ function! neoview#fzf#run(arg)
 
   let opts = { 'id' : id, 'out' : out }
   function! opts.on_exit(job_id, code, event)
-    if a:code == 0
+    if a:code == 0 && !exists('s:ignore_selection')
       let output = readfile(self.out)
       call neoview#close(self.id, output)
     else
