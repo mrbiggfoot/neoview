@@ -260,6 +260,10 @@ endfunction
 " 'final' specifies whether this is the final action. Set to false for
 " preview.
 function! s:show_file(filename, excmd, final)
+  if a:excmd != ''
+    " Do the needed a:excmd escaping.
+    let excmd = escape(a:excmd, '\*[]~')
+  endif
   if a:final
     let mods = ''
   else
@@ -268,19 +272,20 @@ function! s:show_file(filename, excmd, final)
   let nr = bufnr(a:filename . '$')
   if nr == -1
     if a:final
-      let cmd = mods . 'edit '
+      let cmd = 'edit '
     else
-      let cmd = mods . 'view '
+      let cmd = 'view '
     endif
-    if a:excmd != ''
-      exec cmd . '+' . a:excmd . ' ' . a:filename
-    else
-      exec cmd . ' ' . a:filename
+    exec mods . cmd . a:filename
+    if exists('excmd')
+      exec mods . excmd
     endif
     return
   endif
   exec mods . 'b ' . nr
-  exec mods . a:excmd
+  if exists('excmd')
+    exec mods . excmd
+  endif
 endfunction
 
 " View function that expects a file name string in 'ctx[0]'.
@@ -314,20 +319,15 @@ endfunction
 " View function that expects file\texcmd\t... lines in ctx.
 " Opens all folds on preview and centers the previewed line.
 function! neoview#view_file_excmd(ctx, final)
-  function! EscapeCmd(excmd)
-    let cmd = substitute(a:excmd, '\\', '\\\\', 'g')
-    let cmd = substitute(cmd, ' ', '\\ ', 'g')
-    return cmd
-  endfunction
   " m[0] - file name, m[1] - ex cmd
   if a:final
     for ln in a:ctx
       let m = split(ln, '\t')
-      call s:show_file(m[0], EscapeCmd(m[1]), 1)
+      call s:show_file(m[0], m[1], 1)
     endfor
   else
     let m = split(a:ctx[0], '\t')
-    call s:show_file(m[0], EscapeCmd(m[1]), 0)
+    call s:show_file(m[0], m[1], 0)
     exec 'match Search /\%'.line('.').'l/'
     exec 'normal! zRzz'
   endif
