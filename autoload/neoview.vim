@@ -75,6 +75,18 @@ endfunction
 
 "------------------------------------------------------------------------------
 
+" Returns true if the current window is a neoview search window.
+function! neoview#is_search_win()
+  return getwinvar(winnr(), 'neoview_s') != ''
+endfunction
+
+" Returns true if the current window is a neoview preview window.
+function! neoview#is_preview_win()
+  return getwinvar(winnr(), 'neoview_p') != ''
+endfunction
+
+"------------------------------------------------------------------------------
+
 " Send keystrokes to the preview window. If called not from a preview or
 " a search window, becomes a no op.
 function! neoview#feed_keys_to_preview(keys)
