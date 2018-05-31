@@ -163,6 +163,14 @@ function! neoview#fzf#ripgrep_arg(pattern, rg_opt)
   return arg
 endfunction
 
+function! neoview#fzf#ripgrep_files_arg(rg_opt)
+  let arg = {
+    \ 'source' : 'rg --files --color=never ' . a:rg_opt,
+    \ 'view_fn' : 'neoview#view_file'
+    \ }
+  return arg
+endfunction
+
 "------------------------------------------------------------------------------
 " Tags source
 "------------------------------------------------------------------------------
