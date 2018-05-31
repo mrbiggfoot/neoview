@@ -257,33 +257,40 @@ endfunction
 
 " Helper function to show file which may contain changes.
 " Simple 'edit' returns E37 in this case, and this function handles it.
-function! s:show_file(filename, excmd)
-  try
-    if a:excmd != ''
-      exec 'silent edit +' . a:excmd . ' ' . a:filename
+" 'final' specifies whether this is the final action. Set to false for
+" preview.
+function! s:show_file(filename, excmd, final)
+  if a:final
+    let mods = ''
+  else
+    let mods = 'silent keepjumps '
+  endif
+  let nr = bufnr(a:filename . '$')
+  if nr == -1
+    if a:final
+      let cmd = mods . 'edit '
     else
-      exec 'silent edit ' . a:filename
+      let cmd = mods . 'view '
     endif
-  catch /^Vim\%((\a\+)\)\=:E37/
-    " E37: No write since last change (add ! to override)
-    let nr = bufnr(a:filename)
-    if nr == -1
-      echoerr 'Buffer does not exist for ' . a:filename
-      return
+    if a:excmd != ''
+      exec cmd . '+' . a:excmd . ' ' . a:filename
+    else
+      exec cmd . ' ' . a:filename
     endif
-    exec 'silent b ' . nr
-    exec a:excmd
-  endtry
+    return
+  endif
+  exec mods . 'b ' . nr
+  exec mods . a:excmd
 endfunction
 
 " View function that expects a file name string in 'ctx[0]'.
 function! neoview#view_file(ctx, final)
   if a:final
     for f in a:ctx
-      call s:show_file(f, '')
+      call s:show_file(f, '', 1)
     endfor
   else
-    call s:show_file(a:ctx[0], '')
+    call s:show_file(a:ctx[0], '', 0)
   endif
 endfunction
 
@@ -294,11 +301,11 @@ function! neoview#view_fileline(ctx, final)
   if a:final
     for f in a:ctx
       let m = matchlist(f, '\([^:]\+\):\(\d\+\)')
-      call s:show_file(m[1], m[2])
+      call s:show_file(m[1], m[2], 1)
     endfor
   else
     let m = matchlist(a:ctx[0], '\([^:]\+\):\(\d\+\)')
-    call s:show_file(m[1], m[2])
+    call s:show_file(m[1], m[2], 0)
     exec 'match Search /\%'.line('.').'l/'
     exec 'normal! zRzz'
   endif
@@ -316,11 +323,11 @@ function! neoview#view_file_excmd(ctx, final)
   if a:final
     for ln in a:ctx
       let m = split(ln, '\t')
-      call s:show_file(m[0], EscapeCmd(m[1]))
+      call s:show_file(m[0], EscapeCmd(m[1]), 1)
     endfor
   else
     let m = split(a:ctx[0], '\t')
-    call s:show_file(m[0], EscapeCmd(m[1]))
+    call s:show_file(m[0], EscapeCmd(m[1]), 0)
     exec 'match Search /\%'.line('.').'l/'
     exec 'normal! zRzz'
   endif
@@ -466,24 +473,29 @@ function! neoview#update(id, context_str)
       exec preview_win_cmd
       let preview_winnr = winnr()
     else
-      exec search_winnr . 'wincmd w'
-      wincmd k
-      let preview_winnr = winnr()
-      if preview_winnr == search_winnr
-        wincmd j
+      let preview_winnr = s:neoview_winnr(a:id, 'neoview_orig')
+      if preview_winnr
+        exec preview_winnr . 'wincmd w'
+      else
+        exec search_winnr . 'wincmd w'
+        wincmd k
         let preview_winnr = winnr()
         if preview_winnr == search_winnr
-          wincmd h
+          wincmd j
           let preview_winnr = winnr()
           if preview_winnr == search_winnr
-            wincmd l
+            wincmd h
             let preview_winnr = winnr()
             if preview_winnr == search_winnr
-              " Preview window command is not specified and we were unable to
-              " find a window to use for preview. Just create a new window
-              " for preview.
-              new
+              wincmd l
               let preview_winnr = winnr()
+              if preview_winnr == search_winnr
+                " Preview window command is not specified and we were unable to
+                " find a window to use for preview. Just create a new window
+                " for preview.
+                new
+                let preview_winnr = winnr()
+              endif
             endif
           endif
         endif
