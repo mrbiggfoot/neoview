@@ -63,18 +63,14 @@ def displayable_info(path, line, comment):
 
 # Find the lines we need to process
 if ignore_case:
-    out = subprocess.getoutput('(look %s %s; look %s %s) | '
-                               'rg --color never -N -i -w "^%s"' %
-                               (tagname[0].upper(),
-                                tagfile,
-                                tagname[0].lower(),
-                                tagfile,
-                                tagname)).split("\n")
+    cmd = '(look %s %s; look %s %s) | rg --color never -N -i -w "^%s"' % \
+        (tagname[0].upper(), tagfile, tagname[0].lower(), tagfile, tagname)
 else:
-    out = subprocess.getoutput('look "%s" %s | rg --color never -N -w "^%s"' %
-                               (tagname,
-                                tagfile,
-                                tagname)).split("\n")
+    cmd = 'look "%s" %s | rg --color never -N -w "^%s"' % \
+        (tagname, tagfile, tagname)
+
+result = subprocess.check_output(cmd, shell=True)
+out = result.decode("utf-8", errors="ignore").rstrip().split("\n")
 
 #
 # Create 'tags' and 'resolve_lines'
