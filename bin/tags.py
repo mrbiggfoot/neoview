@@ -48,13 +48,17 @@ resolve_lines = {}
 # Max length of a relative path to display.
 max_rpath_len = 0
 
+# Max length of a code line to display.
+max_code_len = 0
+
 
 # Return displayable info string based on the passed info
 def displayable_info(path, line, comment):
     if len(path) > max_rpath_len:
         path = '<' + path[-max_rpath_len + 1:]
     cs = comment.split("\t", 1)
-    return ('{}{:<' + str(max_rpath_len) + '}{} {}{}{} {}{}{}\t{}{}{}').\
+    return ('{}{:<' + str(max_rpath_len) + '}{} │{}{}{}│ {}{:' +
+            str(max_code_len) + '}{} │ {}{}{}').\
         format(
             COLOR_PATH, path, COLOR_RESET,
             COLOR_TAGTYPE, cs[0], COLOR_RESET,
@@ -95,6 +99,7 @@ for l in out:
         else:
             resolve_lines[rpath] = {int(info[0]): None}
     else:
+        max_code_len = max(len(info[0]) - 4, max_code_len)
         tags.append([rpath, info[0], info[1].strip()])
 
 #
@@ -113,6 +118,7 @@ for rpath, rlines in resolve_lines.items():
                 cur_line_num = cur_line_num + 1
                 if cur_line_num == num:
                     rlines[num] = line.rstrip()
+                    max_code_len = max(len(line.rstrip()), max_code_len)
                     break
 
 #
