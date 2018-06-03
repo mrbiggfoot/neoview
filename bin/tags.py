@@ -57,8 +57,8 @@ def displayable_info(path, line, comment):
     if len(path) > max_rpath_len:
         path = '<' + path[-max_rpath_len + 1:]
     cs = comment.split("\t", 1)
-    return ('{}{:<' + str(max_rpath_len) + '}{} │{}{}{}│ {}{:' +
-            str(max_code_len) + '}{} │ {}{}{}').\
+    return ('{}{:<' + str(max_rpath_len) + '}{} |{}{}{}| {}{:' +
+            str(max_code_len) + '}{} | {}{}{}').\
         format(
             COLOR_PATH, path, COLOR_RESET,
             COLOR_TAGTYPE, cs[0], COLOR_RESET,
