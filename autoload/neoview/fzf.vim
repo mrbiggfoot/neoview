@@ -87,7 +87,7 @@ function! neoview#fzf#run(arg)
     \ has_key(arg, 'fzf_win') ? arg.fzf_win : '',
     \ has_key(arg, 'preview_win') ? arg.preview_win : '',
     \ has_key(arg, 'view_fn') ? arg.view_fn : '',
-    \ 'neoview#adjust_fzf_win_sizes')
+    \ function('neoview#adjust_fzf_win_sizes'))
   let s:last_id = id
 
   " We can't just use stdout because it will contain stuff from fzf interface.
@@ -158,7 +158,7 @@ function! neoview#fzf#ripgrep_arg(pattern, rg_opt)
     \ 'source' : 'rg --line-number --no-heading --color=always ' . a:rg_opt .
     \            ' ' . a:pattern,
     \ 'opt' : '--ansi ',
-    \ 'view_fn' : 'neoview#view_fileline'
+    \ 'view_fn' : function('neoview#view_file_line')
     \ }
   return arg
 endfunction
@@ -166,7 +166,7 @@ endfunction
 function! neoview#fzf#ripgrep_files_arg(rg_opt)
   let arg = {
     \ 'source' : 'rg --files --color=never ' . a:rg_opt,
-    \ 'view_fn' : 'neoview#view_file',
+    \ 'view_fn' : function('neoview#view_file'),
     \ 'opt' : ''
     \ }
   return arg
@@ -189,7 +189,52 @@ function! neoview#fzf#tags_arg(tagname, ignore_case, ...)
   let arg = {
     \ 'source' : src,
     \ 'opt' : '--ansi --delimiter="\t" --with-nth=3.. ',
-    \ 'view_fn' : 'neoview#view_file_excmd'
+    \ 'view_fn' : function('neoview#view_file_excmd')
+    \ }
+  return arg
+endfunction
+
+"------------------------------------------------------------------------------
+" Buffer lines source
+"------------------------------------------------------------------------------
+
+" Return ANSI escape code for the group color. Works only for 256 color
+" terminal at the moment.
+function! s:GroupColor(grp)
+  let fgcol = synIDattr(synIDtrans(hlID(a:grp)), 'fg')
+  let bgcol = synIDattr(synIDtrans(hlID(a:grp)), 'bg')
+  let c = "\033[38;5;" . (empty(fgcol) ? "30" : fgcol) . "m"
+  if !empty(bgcol)
+    let c = c . "\033[48;5;" . bgcol . "m"
+  endif
+  return c
+endfunction
+
+" Search in the lines of the current buffer.
+function! neoview#fzf#buf_lines_arg()
+  " Write the lines to a temp file.
+  let s:bl_fmt = s:GroupColor("LineNr")
+  if line('$') < 100
+    let s:bl_fmt = s:bl_fmt . "%2d"
+  elseif line('$') < 1000
+    let s:bl_fmt = s:bl_fmt . "%3d"
+  else
+    let s:bl_fmt = s:bl_fmt . "%4d"
+  endif
+  let s:bl_fmt = s:bl_fmt . "\033[m %s"
+  function! FmtLine(key, val)
+    return printf(s:bl_fmt, a:key + 1, a:val)
+  endfunction
+  let lines = map(getline(1, '$'), function('FmtLine'))
+  unlet s:bl_fmt
+  let tmp = tempname()
+  call writefile(lines, tmp)
+
+  " Create the arg.
+  let arg = {
+    \ 'source' : 'cat ' . tmp,
+    \ 'opt' : '--ansi --nth=2.. ',
+    \ 'view_fn' : function('neoview#view_buf_line', [ bufnr('%') ])
     \ }
   return arg
 endfunction

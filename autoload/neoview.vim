@@ -40,7 +40,7 @@ let s:timer_id = -1
 "
 " search_win_cmd  - string, vim command to create the search window.
 " preview_win_cmd - string, vim command to create the preview window.
-" view_fn         - string, vim script function name to be called on
+" view_fn         - function object, vim script function to be called on
 "                   candidate for both preview and candidate(s) selection.
 " enable_preview  - bool, whether preview window is enabled.
 " cur_bufnr       - int, buffer number displayed in the preview window.
@@ -117,7 +117,13 @@ endfunction
 function! neoview#adjust_fzf_win_sizes(timer_id)
   let cur_winnr = winnr()
   for nr in range(1, winnr('$'))
-    if getwinvar(nr, 'neoview_s')
+    let id = getwinvar(nr, 'neoview_s')
+    if id
+      if s:state[id].search_win_cmd == ''
+        " No dedicated window was created for search, so don't resize the
+        " current window.
+        continue
+      endif
       let bufnr = winbufnr(nr)
       let h0 = getwinvar(nr, 'neoview_h0', 1000)
 
@@ -301,7 +307,7 @@ endfunction
 
 " View function that expects file:line at the beginning of ctx[0].
 " Opens all folds on preview and centers the previewed line.
-function! neoview#view_fileline(ctx, final)
+function! neoview#view_file_line(ctx, final)
   " m[1] - file name, m[2] - line number
   if a:final
     for f in a:ctx
@@ -328,6 +334,25 @@ function! neoview#view_file_excmd(ctx, final)
   else
     let m = split(a:ctx[0], '\t')
     call s:show_file(m[0], m[1], 0)
+    exec 'match Search /\%'.line('.').'l/'
+    exec 'normal! zRzz'
+  endif
+endfunction
+
+" View function that is used for buffer lines. Each line should start with its
+" number, 1-based.
+function! neoview#view_buf_line(bnum, ctx, final)
+  let lnum = matchstr(a:ctx[0], '\d\+')
+  if empty(lnum)
+    echoerr "No line number found!"
+    return
+  endif
+  if a:final
+    exec 'b ' . a:bnum
+    exec lnum
+  else
+    exec 'silent keepjumps b ' . a:bnum
+    exec 'silent keepjumps ' . lnum
     exec 'match Search /\%'.line('.').'l/'
     exec 'normal! zRzz'
   endif
@@ -368,7 +393,7 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn,
   " Set original window info to be able to go back to it when we are done.
   call setwinvar(winnr(), 'neoview_orig', s:neoview_id)
 
-  let view_fn = (a:view_fn == '') ? 'neoview#view_file' : a:view_fn
+  let View_fn = (a:view_fn == '') ? function('neoview#view_file') : a:view_fn
 
   if a:search_win_cmd != ''
     let lim_width = &columns - 1
@@ -389,7 +414,7 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn,
     \ 'search_win_cmd' : search_win_cmd,
     \ 'search_bufnr' : bufnr('%'),
     \ 'preview_win_cmd' : a:preview_win_cmd,
-    \ 'view_fn' : view_fn,
+    \ 'view_fn' : View_fn,
     \ 'enable_preview' : 0,
     \ 'cur_bufnr' : -1,
     \ 'cur_bufnr_excl' : 0
@@ -430,9 +455,6 @@ function! neoview#close(id, view_context)
     exec nr . 'wincmd q'
   endif
 
-  " Close the search buffer.
-  exec 'bw! ' . state.search_bufnr
-
   " Go back to the originating window.
   let orig_nr = s:neoview_winnr(a:id, 'neoview_orig')
   if nr
@@ -442,9 +464,12 @@ function! neoview#close(id, view_context)
 
   " Call view function with 'final' = true.
   if len(a:view_context) > 0
-    exec 'call ' . state['view_fn'] . '(a:view_context, 1)'
+    call state['view_fn'](a:view_context, 1)
   endif
   unlet s:state[a:id]
+
+  " Close the search buffer.
+  exec 'bw! ' . state.search_bufnr
 
   if len(s:state) == 0 && s:timer_id != -1
     call timer_stop(s:timer_id)
@@ -474,7 +499,7 @@ function! neoview#update(id, context_str)
       let preview_winnr = winnr()
     else
       let preview_winnr = s:neoview_winnr(a:id, 'neoview_orig')
-      if preview_winnr
+      if preview_winnr && !getwinvar(preview_winnr, 'neoview_s')
         exec preview_winnr . 'wincmd w'
       else
         exec search_winnr . 'wincmd w'
@@ -527,8 +552,7 @@ function! neoview#update(id, context_str)
 
   " Call the view function that will set the preview window content based
   " on the context_str. The 'final' argument is false.
-  let ctx = substitute(a:context_str, "'", "''", 'g')
-  exec 'call ' . state['view_fn'] . '([''' . ctx . '''], 0)'
+  call state['view_fn']([a:context_str], 0)
 
   " Maybe delete the previously previewed buffer.
   let new_bufnr = winbufnr(preview_winnr)
