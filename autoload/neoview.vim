@@ -197,7 +197,7 @@ function! s:close_preview(id)
       " Restore original content of the window.
       exec nr . 'wincmd w'
       let rbuf = getwinvar(nr, 'neoview_p_buf', -1)
-      let rview = getwinvar(nr, '', {})
+      let rview = getwinvar(nr, 'neoview_p_view', {})
       if rbuf != -1 && getbufinfo(rbuf) != []
         exec 'b ' . rbuf
         if rview != {}
@@ -206,9 +206,10 @@ function! s:close_preview(id)
       else
         enew
       endif
-      call setwinvar(nr, 'neoview_p', 0)
-      call setwinvar(nr, 'neoview_p_buf', -1)
-      call setwinvar(nr, 'neoview_p_view', {})
+      unlet w:neoview_p
+      unlet w:neoview_p_buf
+      unlet w:neoview_p_view
+      match none
       wincmd p
     else
       exec nr . 'wincmd q'
@@ -449,7 +450,8 @@ function! neoview#close(id, view_context)
   " Close search window if it was created, otherwise reset 'neoview_s' var.
   let nr = s:neoview_winnr(a:id, 'neoview_s')
   if state.search_win_cmd == ''
-    call setwinvar(nr, 'neoview_s', 0)
+    exec nr . 'wincmd w'
+    unlet w:neoview_s
     setlocal statusline=
   else
     exec nr . 'wincmd q'
