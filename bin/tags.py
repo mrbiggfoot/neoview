@@ -11,6 +11,7 @@ Note: tags should be generated with "--tag-relative=yes".
 """
 import argparse
 import os
+import re
 import subprocess
 
 # Parse command line args.
@@ -52,6 +53,11 @@ max_rpath_len = 0
 max_code_len = 0
 
 
+# Unescape the sequences starting with a backslash.
+def unescape(s):
+    return re.sub(r'\\(.)', r'\1', s)
+
+
 # Return displayable info string based on the passed info
 def displayable_info(path, line, comment):
     if len(path) > max_rpath_len:
@@ -62,7 +68,7 @@ def displayable_info(path, line, comment):
         format(
             COLOR_PATH, path, COLOR_RESET,
             COLOR_TAGTYPE, cs[0], COLOR_RESET,
-            COLOR_LINE, line, COLOR_RESET,
+            COLOR_LINE, unescape(line), COLOR_RESET,
             COLOR_COMMENT, cs[1] if len(cs) is 2 else "", COLOR_RESET)
 
 # Find the lines we need to process
@@ -99,7 +105,7 @@ for l in out:
         else:
             resolve_lines[rpath] = {int(info[0]): None}
     else:
-        max_code_len = max(len(info[0]) - 4, max_code_len)
+        max_code_len = max(len(unescape(info[0])) - 4, max_code_len)
         tags.append([rpath, info[0], info[1].strip()])
 
 #
@@ -117,8 +123,8 @@ for rpath, rlines in resolve_lines.items():
             for line in f:
                 cur_line_num = cur_line_num + 1
                 if cur_line_num == num:
-                    rlines[num] = line.rstrip()
-                    max_code_len = max(len(line.rstrip()), max_code_len)
+                    rlines[num] = unescape(line.rstrip())
+                    max_code_len = max(len(rlines[num]), max_code_len)
                     break
 
 #

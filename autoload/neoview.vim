@@ -262,7 +262,7 @@ endfunction
 function! s:show_file(filename, excmd, final)
   if a:excmd != ''
     " Do the needed a:excmd escaping.
-    let excmd = escape(a:excmd, '\*[]~')
+    let excmd = escape(a:excmd, '*[]~')
   endif
   if a:final
     let mods = ''
