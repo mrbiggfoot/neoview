@@ -471,8 +471,9 @@ function! neoview#close(id, view_context)
   unlet s:state[a:id]
 
   " Close the search buffer.
-  exec 'bw! ' . state.search_bufnr
+  exec 'Bw! ' . state.search_bufnr
 
+  " Stop timer if it is the last one.
   if len(s:state) == 0 && s:timer_id != -1
     call timer_stop(s:timer_id)
     let s:timer_id = -1
