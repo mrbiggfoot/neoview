@@ -421,7 +421,7 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn,
     \ 'cur_bufnr_excl' : 0
     \ }
 
-  if g:neoview_enable_dyn_size && a:adjust_win_sizes_fn != ''
+  if g:neoview_enable_dyn_size && a:adjust_win_sizes_fn != '' && has('nvim')
     " Start the update timer if we just created the first state.
     if len(s:state) == 1
       let s:timer_id =
@@ -470,8 +470,10 @@ function! neoview#close(id, view_context)
   endif
   unlet s:state[a:id]
 
-  " Close the search buffer.
-  exec 'Bw! ' . state.search_bufnr
+  if has('nvim')
+    " Close the search buffer.
+    exec 'Bw! ' . state.search_bufnr
+  endif
 
   " Stop timer if it is the last one.
   if len(s:state) == 0 && s:timer_id != -1

@@ -126,12 +126,17 @@ function! neoview#fzf#run(arg)
     let prefix = has_key(arg, 'source') ?
       \ 'cat ' . s:last_candidates . '|' : ''
   endif
-  let fzf = 'fzf ' . fzf_opt . ' --preview="' . neoview#script_name() . ' ' .
-    \ id . ' {}" --preview-window=right:0 --history=' . s:history . ' >' . out
+  if has('nvim')
+    let fzf = 'fzf ' . fzf_opt . ' --preview="' . neoview#script_name() . ' ' .
+      \ id . ' {}" --preview-window=right:0 --history=' . s:history . ' >' .
+      \ out
+  else
+    let fzf = 'fzf ' . fzf_opt . ' --vim --history=' . s:history . ' >' . out
+  endif
   let cmd = prefix . fzf
 
   let opts = { 'id' : id, 'out' : out }
-  function! opts.on_exit(job_id, code, event)
+  function! opts.on_exit(job_id, code, ...)
     if a:code == 0 && !exists('s:ignore_selection')
       let output = readfile(self.out)
       call neoview#close(self.id, output)
@@ -141,12 +146,18 @@ function! neoview#fzf#run(arg)
     call delete(self.out)
   endfunction
 
-  let s:last_job_id = termopen(cmd, opts)
-  if !new_session
-    " For some reason, fzf does not react to the keys without the sleep.
-    sleep 20m
-    call chansend(s:last_job_id, "\<C-p>")
+  if has('nvim')
+    let s:last_job_id = termopen(cmd, opts)
+    if !new_session
+      " For some reason, fzf does not react to the keys without the sleep.
+      sleep 20m
+      call chansend(s:last_job_id, "\<C-p>")
+    endif
+  else
+    call term_start([&shell, &shellcmdflag, cmd],
+      \ {'curwin': 1, 'exit_cb': function(opts.on_exit)})
   endif
+  call setbufvar('%', 'neoview_id', id)
 endfunction
 
 "------------------------------------------------------------------------------
