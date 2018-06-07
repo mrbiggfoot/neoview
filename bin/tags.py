@@ -135,4 +135,4 @@ for t in tags:
         line = displayable_info(t[0], resolve_lines[t[0]][t[1]], t[2])
     else:
         line = displayable_info(t[0], t[1][2:-2], t[2])
-    print('%s\t%s\t%s' % (t[0], t[1], line))
+    print('%s\t%s\t%s' % (t[0], t[1].replace('\t', '\\t'), line))
