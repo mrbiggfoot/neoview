@@ -245,12 +245,14 @@ function! neoview#toggle_preview()
     if nr
       " Close the preview.
       call s:close_preview(id)
+      if !has('nvim') && &buftype == 'terminal' && mode() == 'n'
+        call feedkeys('i', 'x')
+      endif
     else
       " Open the preview.
       let state.enable_preview = 1
       call neoview#update(id, state.context_str)
     endif
-    startinsert
   endif
 endfunction
 
