@@ -111,6 +111,97 @@ endfunction
 
 "------------------------------------------------------------------------------
 
+if !hlexists('NvSearchTag')
+  highlight NvSearchTag ctermfg=LightGreen ctermbg=Black cterm=bold
+endif
+if !hlexists('NvSearchDef')
+  highlight NvSearchDef ctermfg=White ctermbg=Black cterm=bold
+endif
+if !hlexists('NvSearchCur')
+  highlight NvSearchCur ctermfg=White ctermbg=Gray cterm=bold
+endif
+if !hlexists('NvSearchStatRd')
+  highlight NvSearchStatRd ctermfg=LightRed ctermbg=Black cterm=bold
+endif
+if !hlexists('NvSearchStatFin')
+  highlight NvSearchStatFin ctermfg=Yellow ctermbg=Black cterm=bold
+endif
+
+" Update the search info for search 'id'. Arglist is the following:
+" ptn       - search pattern
+" x         - cursor X axis position
+" num_filt  - number of filtered candidates
+" num_total - total nuber of candidates
+" num_sel   - number of selected candidates (non-zero only for multi selection)
+" rd        - non-zero if the candidate list is still being populated
+function! neoview#set_search_info(id, ptn, x, num_filt, num_total, num_sel, rd)
+  let nr = s:neoview_winnr(a:id, 'neoview_s')
+  if !nr
+    echo "No window! > " . a:ptn
+    return
+  endif
+
+  function! Normalize(ptn)
+    let p = substitute(a:ptn, '\\', '\\\\', 'g')
+    let p = substitute(p, ' ', '\\ ', 'g')
+    let p = substitute(p, '%', '%%', 'g')
+    let p = substitute(p, '|', '\\|', 'g')
+    let p = substitute(p, '"', '\\"', 'g')
+    return p
+  endfunction
+
+  function! PtnBegin(ptn, x)
+    return Normalize(strpart(a:ptn, 0, a:x))
+  endfunction
+
+  function! PtnCur(ptn, x)
+    if a:x >= len(a:ptn)
+      return '\ '
+    endif
+    return Normalize(a:ptn[a:x])
+  endfunction
+
+  function! PtnEnd(ptn, x)
+    if a:x >= len(a:ptn)
+      return ''
+    endif
+    return Normalize(strpart(a:ptn, a:x + 1))
+  endfunction
+
+  function! Stats(nf, nt, ns)
+    if a:ns > 0
+      return a:nf . '\ /\ ' . a:nt . '\ (' . a:ns . ')'
+    else
+      return a:nf . '\ /\ ' . a:nt
+    endif
+  endfunction
+
+  let cur = winnr()
+  exec nr . 'wincmd w'
+  exec 'setlocal statusline=%#NvSearchTag#' . 'Tag' . '>\ %#NvSearchDef#' .
+    \ PtnBegin(a:ptn, a:x) . '%#NvSearchCur#' . PtnCur(a:ptn, a:x) .
+    \ '%#NvSearchDef#' . PtnEnd(a:ptn, a:x) . '\ ' .
+    \ (a:rd ? '%#NvSearchStatRd#' : '%#NvSearchStatFin#') . '<\ ' .
+    \ Stats(a:num_filt, a:num_total, a:num_sel) . '\ '
+  exec cur . 'wincmd w'
+endfunction
+
+"------------------------------------------------------------------------------
+
+function! neoview#set_search_window_height(id, height)
+  let nr = s:neoview_winnr(a:id, 'neoview_s')
+  if nr
+    let h0 = getwinvar(nr, 'neoview_h0', 1000)
+    let h = min([h0, a:height])
+    let cur = winnr()
+    exec nr . 'wincmd w'
+    exec 'resize ' . h
+    exec cur . 'wincmd w'
+  endif
+endfunction
+
+"------------------------------------------------------------------------------
+
 " Adjust 'fzf' window sizes based on a hack that either the 2nd or next to
 " the last line contains "N/M", where N is the number of shown matches and
 " M is the total number of matches.
