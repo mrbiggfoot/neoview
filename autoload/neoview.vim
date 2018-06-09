@@ -178,11 +178,12 @@ function! neoview#set_search_info(id, ptn, x, num_filt, num_total, num_sel, rd)
 
   let cur = winnr()
   exec nr . 'wincmd w'
-  exec 'setlocal statusline=%#NvSearchTag#' . 'Tag' . '>\ %#NvSearchDef#' .
-    \ PtnBegin(a:ptn, a:x) . '%#NvSearchCur#' . PtnCur(a:ptn, a:x) .
+  exec 'setlocal statusline=%#NvSearchTag#\ ' . s:state[a:id].tag .
+    \ '>\ %#NvSearchDef#' . PtnBegin(a:ptn, a:x) .
+    \ '%#NvSearchCur#' . PtnCur(a:ptn, a:x) .
     \ '%#NvSearchDef#' . PtnEnd(a:ptn, a:x) . '\ ' .
     \ (a:rd ? '%#NvSearchStatRd#' : '%#NvSearchStatFin#') . '<\ ' .
-    \ Stats(a:num_filt, a:num_total, a:num_sel) . '\ '
+    \ Stats(a:num_filt, a:num_total, a:num_sel)
   exec cur . 'wincmd w'
 endfunction
 
@@ -476,7 +477,7 @@ endfunction
 
 " Initialize context for a new neoview session. Returns the session id.
 " When the session is complete, neoview#close(id) must be called.
-function! neoview#create(search_win_cmd, preview_win_cmd, view_fn,
+function! neoview#create(search_win_cmd, preview_win_cmd, view_fn, tag,
                          \ adjust_win_sizes_fn)
   let s:neoview_id = s:neoview_id + 1
   " Deal with overflow.
@@ -511,7 +512,8 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn,
     \ 'view_fn' : View_fn,
     \ 'enable_preview' : 0,
     \ 'cur_bufnr' : -1,
-    \ 'cur_bufnr_excl' : 0
+    \ 'cur_bufnr_excl' : 0,
+    \ 'tag' : a:tag
     \ }
 
   if g:neoview_enable_dyn_size && a:adjust_win_sizes_fn != '' && has('nvim')

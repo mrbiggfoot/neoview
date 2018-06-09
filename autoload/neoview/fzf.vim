@@ -69,10 +69,15 @@ function! neoview#fzf#run(arg)
       return
     endif
     let s:ignore_selection = 1
-    call chansend(s:last_job_id, "\<CR>")
-    let rc = jobwait([s:last_job_id], 3000)
-    if rc[0] == -1
-      call jobstop(s:last_job_id)
+    if has('nvim')
+      call chansend(s:last_job_id, "\<CR>")
+      let rc = jobwait([s:last_job_id], 3000)
+      if rc[0] == -1
+        call jobstop(s:last_job_id)
+      endif
+    else
+      call term_sendkeys(s:last_job_id, "\<CR>")
+      call term_wait(s:last_job_id)
     endif
     if neoview#is_running(s:last_id)
       echoerr "Failed to stop job " . s:last_job_id
@@ -87,6 +92,7 @@ function! neoview#fzf#run(arg)
     \ has_key(arg, 'fzf_win') ? arg.fzf_win : '',
     \ has_key(arg, 'preview_win') ? arg.preview_win : '',
     \ has_key(arg, 'view_fn') ? arg.view_fn : '',
+    \ has_key(arg, 'tag') ? arg.tag : 'fzf',
     \ function('neoview#adjust_fzf_win_sizes'))
   let s:last_id = id
 
@@ -148,6 +154,7 @@ function! neoview#fzf#run(arg)
 
   if has('nvim')
     let s:last_job_id = termopen(cmd, opts)
+    call setbufvar('%', 'neoview_id', id)
     if !new_session
       " For some reason, fzf does not react to the keys without the sleep.
       sleep 20m
@@ -156,8 +163,13 @@ function! neoview#fzf#run(arg)
   else
     call term_start([&shell, &shellcmdflag, cmd],
       \ {'curwin': 1, 'exit_cb': function(opts.on_exit)})
+    call setbufvar('%', 'neoview_id', id)
+    let s:last_job_id = bufnr('%')
+    if !new_session
+      sleep 20m
+      call term_sendkeys(s:last_job_id, "\<C-p>")
+    endif
   endif
-  call setbufvar('%', 'neoview_id', id)
 endfunction
 
 "------------------------------------------------------------------------------
@@ -169,7 +181,8 @@ function! neoview#fzf#ripgrep_arg(pattern, rg_opt)
     \ 'source' : 'rg --line-number --no-heading --color=always ' . a:rg_opt .
     \            ' ' . a:pattern,
     \ 'opt' : '--ansi ',
-    \ 'view_fn' : function('neoview#view_file_line')
+    \ 'view_fn' : function('neoview#view_file_line'),
+    \ 'tag' : 'rg'
     \ }
   return arg
 endfunction
@@ -178,7 +191,8 @@ function! neoview#fzf#ripgrep_files_arg(rg_opt)
   let arg = {
     \ 'source' : 'rg --files --color=never ' . a:rg_opt,
     \ 'view_fn' : function('neoview#view_file'),
-    \ 'opt' : ''
+    \ 'opt' : '',
+    \ 'tag' : 'file'
     \ }
   return arg
 endfunction
@@ -200,7 +214,8 @@ function! neoview#fzf#tags_arg(tagname, ignore_case, ...)
   let arg = {
     \ 'source' : src,
     \ 'opt' : '--ansi --delimiter="\t" --with-nth=3.. ',
-    \ 'view_fn' : function('neoview#view_file_excmd')
+    \ 'view_fn' : function('neoview#view_file_excmd'),
+    \ 'tag' : 'tag'
     \ }
   return arg
 endfunction
@@ -245,7 +260,8 @@ function! neoview#fzf#buf_lines_arg()
   let arg = {
     \ 'source' : 'cat ' . tmp,
     \ 'opt' : '--ansi --nth=2.. ',
-    \ 'view_fn' : function('neoview#view_buf_line', [ bufnr('%') ])
+    \ 'view_fn' : function('neoview#view_buf_line', [ bufnr('%') ]),
+    \ 'tag' : 'bufline'
     \ }
   return arg
 endfunction
