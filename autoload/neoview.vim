@@ -302,7 +302,6 @@ function! s:close_preview(id)
       unlet w:neoview_p_buf
       unlet w:neoview_p_view
       match none
-      wincmd p
     else
       exec nr . 'wincmd q'
     endif
@@ -337,6 +336,10 @@ function! neoview#toggle_preview()
     if nr
       " Close the preview.
       call s:close_preview(id)
+      let nr = s:neoview_winnr(id, 'neoview_s')
+      if nr
+        exec nr . 'wincmd w'
+      endif
       if !has('nvim') && &buftype == 'terminal' && mode() == 'n'
         call feedkeys('i', 'x')
       endif
