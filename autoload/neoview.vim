@@ -126,6 +126,9 @@ endif
 if !hlexists('NvSearchStatFin')
   highlight NvSearchStatFin ctermfg=Yellow ctermbg=Black cterm=bold
 endif
+if !hlexists('NvSearchNoStatInfo')
+  highlight NvSearchNoStatInfo ctermfg=Yellow ctermbg=Black cterm=bold
+endif
 
 " Update the search info for search 'id'. Arglist is the following:
 " ptn       - search pattern
@@ -506,7 +509,8 @@ function! neoview#create(search_win_cmd, preview_win_cmd, view_fn, tag,
   call setwinvar(winnr(), 'neoview_s', s:neoview_id)
   call setwinvar(winnr(), 'neoview_h0', winheight('%'))
   enew
-  exec 'setlocal statusline=-\ neoview\ ' . s:neoview_id . '\ -'
+  exec 'setlocal statusline=%#NvSearchNoStatInfo#\ -\ neoview\ ' .
+    \ s:neoview_id . '\ -'
 
   let s:state[s:neoview_id] = {
     \ 'search_win_cmd' : search_win_cmd,

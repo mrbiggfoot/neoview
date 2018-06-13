@@ -134,10 +134,11 @@ function! neoview#fzf#run(arg)
   endif
   if has('nvim')
     let fzf = 'fzf ' . fzf_opt . ' --preview="' . neoview#script_name() . ' ' .
-      \ id . ' {}" --preview-window=right:0 --history=' . s:history . ' >' .
-      \ out
+      \ id . ' {}" --preview-window=right:0 --history=' . s:history .
+      \ ' --prompt="' . (has_key(arg, 'tag') ? arg.tag : 'fzf') . '> " >' . out
   else
-    let fzf = 'fzf ' . fzf_opt . ' --vim --history=' . s:history . ' >' . out
+    let fzf = 'fzf ' . fzf_opt . ' --vim --history=' . s:history .
+      \ ' --prompt="' . (has_key(arg, 'tag') ? arg.tag : 'fzf') . '> " >' . out
   endif
   let cmd = prefix . fzf
 
