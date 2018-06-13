@@ -33,6 +33,7 @@ COLOR_TAGTYPE = '\033[1;35m'
 COLOR_PATH = '\033[1;34m'
 COLOR_LINE = ''
 COLOR_COMMENT = '\033[0;32m'
+COLOR_BAR = '\033[0;37m'
 COLOR_RESET = '\033[m'
 
 MAX_DISPLAY_PATH_LEN = 80
@@ -63,12 +64,13 @@ def displayable_info(path, line, comment):
     if len(path) > max_rpath_len:
         path = '<' + path[-max_rpath_len + 1:]
     cs = comment.split("\t", 1)
-    return ('{}{:<' + str(max_rpath_len) + '}{} |{}{}{}| {}{:' +
-            str(max_code_len) + '}{} | {}{}{}').\
+    return ('{}{:<' + str(max_rpath_len) + '}{} {}|{}{}{}|{} {}{:' +
+            str(max_code_len) + '}{} {}|{} {}{}{}').\
         format(
             COLOR_PATH, path, COLOR_RESET,
-            COLOR_TAGTYPE, cs[0], COLOR_RESET,
+            COLOR_BAR, COLOR_TAGTYPE, cs[0], COLOR_BAR, COLOR_RESET,
             COLOR_LINE, unescape(line), COLOR_RESET,
+            COLOR_BAR, COLOR_RESET,
             COLOR_COMMENT, cs[1] if len(cs) is 2 else "", COLOR_RESET)
 
 # Find the lines we need to process
