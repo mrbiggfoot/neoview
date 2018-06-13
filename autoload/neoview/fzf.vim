@@ -183,7 +183,7 @@ function! neoview#fzf#ripgrep_arg(pattern, rg_opt)
     \            ' ' . a:pattern,
     \ 'opt' : '--ansi ',
     \ 'view_fn' : function('neoview#view_file_line'),
-    \ 'tag' : 'rg'
+    \ 'tag' : 'Refs'
     \ }
   return arg
 endfunction
@@ -193,7 +193,7 @@ function! neoview#fzf#ripgrep_files_arg(rg_opt)
     \ 'source' : 'rg --files --color=never ' . a:rg_opt,
     \ 'view_fn' : function('neoview#view_file'),
     \ 'opt' : '',
-    \ 'tag' : 'file'
+    \ 'tag' : 'File'
     \ }
   return arg
 endfunction
@@ -216,7 +216,7 @@ function! neoview#fzf#tags_arg(tagname, ignore_case, ...)
     \ 'source' : src,
     \ 'opt' : '--ansi --delimiter="\t" --with-nth=3.. ',
     \ 'view_fn' : function('neoview#view_file_excmd'),
-    \ 'tag' : 'tag'
+    \ 'tag' : 'Tag'
     \ }
   return arg
 endfunction
@@ -262,7 +262,7 @@ function! neoview#fzf#buf_lines_arg()
     \ 'source' : 'cat ' . tmp,
     \ 'opt' : '--ansi --nth=2.. ',
     \ 'view_fn' : function('neoview#view_buf_line', [ bufnr('%') ]),
-    \ 'tag' : 'bufline'
+    \ 'tag' : 'BufLine'
     \ }
   return arg
 endfunction
