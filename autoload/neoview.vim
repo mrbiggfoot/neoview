@@ -372,7 +372,7 @@ function! s:show_file(filename, excmd, final)
     let excmd = escape(a:excmd, '*[]~')
   endif
   if a:final
-    let mods = ''
+    let mods = 'keepp '
   else
     let mods = 'silent keepjumps '
   endif
