@@ -73,6 +73,11 @@ function! neoview#tag_searcher_name()
   return s:bin_dir.'tags.py'
 endfunction
 
+" Get buffer tag searcher script name.
+function! neoview#buftag_searcher_name()
+  return s:bin_dir.'tags_local.py'
+endfunction
+
 "------------------------------------------------------------------------------
 
 " Returns true if the current window is a neoview search window.

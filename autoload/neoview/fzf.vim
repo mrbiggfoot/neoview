@@ -222,6 +222,25 @@ function! neoview#fzf#tags_arg(tagname, ignore_case, ...)
 endfunction
 
 "------------------------------------------------------------------------------
+" Buffer tags source
+"------------------------------------------------------------------------------
+
+function! neoview#fzf#buf_tags_arg()
+  if !filereadable(expand('%'))
+    echoerr "File is not saved"
+    return
+  endif
+  let src = neoview#buftag_searcher_name() . ' ' . expand('%')
+  let arg = {
+    \ 'source' : src,
+    \ 'opt' : '--ansi --delimiter="\t" --with-nth=3.. ',
+    \ 'view_fn' : function('neoview#view_file_excmd'),
+    \ 'tag' : 'BufTag'
+    \ }
+  return arg
+endfunction
+
+"------------------------------------------------------------------------------
 " Buffer lines source
 "------------------------------------------------------------------------------
 
