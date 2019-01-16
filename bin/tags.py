@@ -135,6 +135,7 @@ for rpath, rlines in resolve_lines.items():
 for t in tags:
     if type(t[1]) is int:
         line = displayable_info(t[0], resolve_lines[t[0]][t[1]], t[2])
+        print('%s\t%d\t%s' % (t[0], t[1], line))
     else:
         line = displayable_info(t[0], t[1][2:-2], t[2])
-    print('%s\t%s\t%s' % (t[0], t[1].replace('\t', '\\t'), line))
+        print('%s\t%s\t%s' % (t[0], t[1].replace('\t', '\\t'), line))
