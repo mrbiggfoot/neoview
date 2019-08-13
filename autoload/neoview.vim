@@ -377,6 +377,8 @@ function! s:show_file(filename, excmd, final)
     let excmd = escape(a:excmd, '*[]~')
   endif
   if a:final
+    " Save the current position in the jump list
+    normal! m'
     let mods = 'keepp '
   else
     let mods = 'silent keepjumps '
@@ -424,8 +426,8 @@ function! neoview#view_file_line(ctx, final)
     let m = matchlist(a:ctx[0], '\([^:]\+\):\(\d\+\)')
     call s:show_file(m[1], m[2], 0)
     exec 'match Search /\%'.line('.').'l/'
-    exec 'normal! zRzz'
   endif
+  exec 'normal! zRzz'
 endfunction
 
 " View function that expects file\texcmd\t... lines in ctx.
@@ -441,8 +443,8 @@ function! neoview#view_file_excmd(ctx, final)
     let m = split(a:ctx[0], '\t')
     call s:show_file(m[0], m[1], 0)
     exec 'match Search /\%'.line('.').'l/'
-    exec 'normal! zRzz'
   endif
+  exec 'normal! zRzz'
 endfunction
 
 " View function that is used for buffer lines. Each line should start with its
@@ -460,8 +462,8 @@ function! neoview#view_buf_line(bnum, ctx, final)
     exec 'silent keepjumps b ' . a:bnum
     exec 'silent keepjumps ' . lnum
     exec 'match Search /\%'.line('.').'l/'
-    exec 'normal! zRzz'
   endif
+  exec 'normal! zRzz'
 endfunction
 
 "------------------------------------------------------------------------------
