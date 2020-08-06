@@ -48,7 +48,7 @@ def displayable_info(tagname, comment):
         format(
             COLOR_TAGNAME, tagname, COLOR_RESET,
             COLOR_BAR, COLOR_TAGTYPE, cs[0], COLOR_BAR, COLOR_RESET,
-            COLOR_COMMENT, cs[1] if len(cs) is 2 else "", COLOR_RESET)
+            COLOR_COMMENT, cs[1] if len(cs) == 2 else "", COLOR_RESET)
 
 for l in out:
     # t[0] - tag name, t[1] - file name, t[2] - tag address and comment

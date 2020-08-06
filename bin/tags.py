@@ -71,7 +71,7 @@ def displayable_info(path, line, comment):
             COLOR_BAR, COLOR_TAGTYPE, cs[0], COLOR_BAR, COLOR_RESET,
             COLOR_LINE, unescape(line), COLOR_RESET,
             COLOR_BAR, COLOR_RESET,
-            COLOR_COMMENT, cs[1] if len(cs) is 2 else "", COLOR_RESET)
+            COLOR_COMMENT, cs[1] if len(cs) == 2 else "", COLOR_RESET)
 
 # Find the lines we need to process
 if ignore_case:
