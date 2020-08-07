@@ -92,7 +92,7 @@ for l in out:
     t = l.split("\t", 2)
     # info[0] - tag address, info[1] - comment
     info = t[2].split(';"')
-    if t[1][0] is '/':
+    if t[1][0] == '/':
         rpath = os.path.relpath(t[1])
     else:
         rpath = os.path.relpath("%s/%s" % (tagfiledir, t[1]))
