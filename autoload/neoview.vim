@@ -381,7 +381,7 @@ function! s:show_file(filename, excmd, final)
     normal! m'
     let mods = 'keepp '
   else
-    let mods = 'silent keepjumps '
+    let mods = 'silent keepjumps keepp '
   endif
   let nr = bufnr(a:filename . '$')
   if nr == -1
@@ -425,7 +425,7 @@ function! neoview#view_file_line(ctx, final)
   else
     let m = matchlist(a:ctx[0], '\([^:]\+\):\(\d\+\)')
     call s:show_file(m[1], m[2], 0)
-    exec 'match Search /\%'.line('.').'l/'
+    exec 'keeppatterns match Search /\%'.line('.').'l/'
   endif
   exec 'normal! zRzz'
 endfunction
@@ -442,7 +442,7 @@ function! neoview#view_file_excmd(ctx, final)
   else
     let m = split(a:ctx[0], '\t')
     call s:show_file(m[0], m[1], 0)
-    exec 'match Search /\%'.line('.').'l/'
+    exec 'keeppatterns match Search /\%'.line('.').'l/'
   endif
   exec 'normal! zRzz'
 endfunction
@@ -461,7 +461,7 @@ function! neoview#view_buf_line(bnum, ctx, final)
   else
     exec 'silent keepjumps b ' . a:bnum
     exec 'silent keepjumps ' . lnum
-    exec 'match Search /\%'.line('.').'l/'
+    exec 'keeppatterns match Search /\%'.line('.').'l/'
   endif
   exec 'normal! zRzz'
 endfunction
