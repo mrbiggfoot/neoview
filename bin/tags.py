@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 #
-# Tags searcher for neoview.
+# Ctags searcher for neoview.
 # Author:  Andrew Pyatkov <mrbiggfoot@gmail.com>
 # License: MIT
 #
 """
-Find exactly matching tags in the specified tags file.
+Find exactly matching tags in the specified ctags file.
 Output: {file_name}\t{tag_address}\t{displayable_tag_info}
 Note: tags should be generated with "--tag-relative=yes".
 """
