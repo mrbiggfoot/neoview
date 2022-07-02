@@ -18,7 +18,8 @@ parser = argparse.ArgumentParser(description='Search in gtags database(s)',
 parser.add_argument('-n', type=int, default=0,
       help='Number of parallel instances. Zero means use regular global '
       'instead of pglobal')
-parser.add_argument("dbpath", help="Gtags DB path")
+parser.add_argument('-t', help='Type to be printed after tag location')
+parser.add_argument("dbpath", help='Gtags DB path')
 parser.add_argument("global_args", nargs=argparse.REMAINDER,
     help='Arguments to be passed to "global"')
 args = parser.parse_args()
@@ -41,6 +42,10 @@ MAX_DISPLAY_PATH_LEN = 80
 # Max "file:line" length encountered, capped at MAX_DISPLAY_PATH_LEN.
 max_loc_len = 0
 
+tagtype = ''
+if args.t:
+  tagtype = COLOR_TAGTYPE + args.t + COLOR_BAR + '|'
+
 gtags_env = os.environ.copy()
 
 if num_inst == 0:
@@ -62,11 +67,11 @@ def displayable_info(path, linenum, info):
     less = '<'
     path = path[-max_loc_len + len(linenum) + 2:]
   return ('{}{}{}{}{}:{}{:<' + str(max_loc_len - len(path) - len(less)  - 1) +
-          '}{} {}|{} {}{}{}').\
+          '}{} {}|{}{} {}{}{}').\
     format(
       COLOR_LESS, less, COLOR_PATH, path, COLOR_RESET,
       COLOR_LINENUM, linenum, COLOR_RESET,
-      COLOR_BAR, COLOR_RESET,
+      COLOR_BAR, tagtype, COLOR_RESET,
       COLOR_INFO, info, COLOR_RESET)
 
 # Contains lists of [file_name, line, info].
@@ -74,6 +79,8 @@ out = []
 
 # Process output and calculate max_loc_len
 for line in lines:
+  if line == '':
+    continue
   t = line.split(':', maxsplit=2)
   # t[0] - file, t[1] - line, t[2] - info
   out.append([t[0], t[1], t[2]])

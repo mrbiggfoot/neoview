@@ -199,13 +199,13 @@ function! neoview#fzf#ripgrep_files_arg(rg_opt)
 endfunction
 
 "------------------------------------------------------------------------------
-" Tags source
+" Tags source (ctags)
 "------------------------------------------------------------------------------
 
 " Search for tagname in the tag files passed in the variable args.
 function! neoview#fzf#tags_arg(tagname, ignore_case, ...)
   let src = ''
-  let searcher = neoview#tag_searcher_name() . ' '
+  let searcher = neoview#ctags_searcher_name() . ' '
   if a:ignore_case
     let searcher = searcher . ' -i '
   endif
@@ -216,7 +216,49 @@ function! neoview#fzf#tags_arg(tagname, ignore_case, ...)
     \ 'source' : src,
     \ 'opt' : '--ansi --delimiter="\t" --with-nth=3.. ',
     \ 'view_fn' : function('neoview#view_file_excmd'),
-    \ 'tag' : 'Tag'
+    \ 'tag' : 'Ctag'
+    \ }
+  return arg
+endfunction
+
+"------------------------------------------------------------------------------
+" Tags source (gtags)
+"------------------------------------------------------------------------------
+
+" Search for tagname in the tag DB(s).
+" The variable args are passed to 'global' as is.
+" 'type' is a string that may contain 'd' and 'r'.
+"   d - find definitions (global -d)
+"   r - find references (global -rs)
+"
+" Note that in parallel DBs case some references may be treated as symbols
+" without definition due to DB split, so '-rs' is used to find references.
+function! neoview#fzf#gtags_arg(db_path, num_instances, type, ...)
+  let searcher = neoview#gtags_searcher_name() . ' -n ' . a:num_instances
+
+  let gl_args = ''
+  for gl_arg in a:000
+    let gl_args = gl_args . ' ' . gl_arg
+  endfor
+
+  let src = ''
+
+  if empty(a:type) || matchstr(a:type, 'd') != ''
+    let src = searcher . ' -t d ' . a:db_path . ' -d' . gl_args
+  endif
+
+  if empty(a:type) || matchstr(a:type, 'r') != ''
+    if !empty(src)
+      let src = src . ';'
+    endif
+    let src = src . searcher . ' -t r ' . a:db_path . ' -rs' . gl_args
+  endif
+
+  let arg = {
+    \ 'source' : src,
+    \ 'opt' : '--ansi --delimiter="\t" --with-nth=3.. ',
+    \ 'view_fn' : function('neoview#view_file_excmd'),
+    \ 'tag' : 'Gtag'
     \ }
   return arg
 endfunction

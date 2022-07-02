@@ -68,9 +68,14 @@ function! neoview#script_name()
   return s:preview_script
 endfunction
 
-" Get tag searcher script name.
-function! neoview#tag_searcher_name()
+" Get tag searcher script name (ctags).
+function! neoview#ctags_searcher_name()
   return s:bin_dir.'tags.py'
+endfunction
+
+" Get tag searcher script name (gtags).
+function! neoview#gtags_searcher_name()
+  return s:bin_dir.'gtags.py'
 endfunction
 
 " Get buffer tag searcher script name.
